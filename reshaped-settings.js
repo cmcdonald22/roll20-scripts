@@ -27,7 +27,7 @@ var reshapedSettings = reshapedSettings || (function() {
     
     printHelp = function(who) {
         var helpString;
-        helpString = "<div style=\"border: 1px solid black; background-color: white; padding: 3px 3px; font-weight: bold;\">";
+        helpString = "<div style=\"border: 1px solid black; background-color: white; padding: 3px 3px; font-weight: normal;\">";
         helpString += "<h3>Reshaped Sheet Default Settings<br />Help</h3>";
         helpString += "<h4>Usage</h4>";
         helpString += '<div style="padding-left: 10px;padding-right:20px">';
@@ -37,6 +37,7 @@ var reshapedSettings = reshapedSettings || (function() {
                         '</pre>'+
                     '</div>';
         helpString += '<b>or</b>';
+        helpString += '<div style="padding-left: 10px;padding-right:20px">';
         helpString += "<i>Select a number of tokens representing a character and run the following to delete all sheet state:</i>";
         helpString += '<pre style="white-space:normal;word-break:normal;word-wrap:normal;">'+
                             '!rsettings --clean'+
