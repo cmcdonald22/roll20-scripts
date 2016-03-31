@@ -1,7 +1,7 @@
 var reshapedSettings = reshapedSettings || (function() {
     'use strict';
     
-    var version = '0.1.0',
+    var version = '0.2.0',
     sheetVersion = '2.2.19+',
     defaultSettings = {
         'output_option': '@{output_to_all}', // can be @{output_to_gm} or @{output_to_all}
@@ -23,6 +23,7 @@ var reshapedSettings = reshapedSettings || (function() {
         'hide_spell_content': '@{hide_spell_content_var}',
         'hide_action_freetext': '@{hide_action_freetext_var}'
     },
+    cleanExclusionList = ['version', 'is_npc', 'tab', 'edit_mode'],
         
     checkInstall = function() {
         log('Reshaped Sheet Default Settings v'+version+' for D&D 5E Reshaped '+sheetVersion+' is ready! Default Settings are: \n'+JSON.stringify(defaultSettings));
@@ -34,13 +35,20 @@ var reshapedSettings = reshapedSettings || (function() {
     
     printHelp = function(who) {
         var helpString;
-        helpString = "<div style=\"border: 1px solid black; background-color: white; padding: 3px 3px; font-weight: bold;\">";
+        helpString = "<div style=\"border: 1px solid black; background-color: white; padding: 3px 3px; font-weight: normal;\">";
         helpString += "<h3>Reshaped Sheet Default Settings<br />Help</h3>";
         helpString += "<h4>Usage</h4>";
         helpString += '<div style="padding-left: 10px;padding-right:20px">';
-        helpString += "<i>Select a number of tokens representing a character and run</i>";
+        helpString += "<i>Select a number of tokens representing a character and run the following to apply default settings:</i>";
         helpString += '<pre style="white-space:normal;word-break:normal;word-wrap:normal;">'+
                             '!rsettings '+
+                        '</pre>'+
+                    '</div>';
+        helpString += '<b>or</b>';
+        helpString += '<div style="padding-left: 10px;padding-right:20px">';
+        helpString += "<i>Select a number of tokens representing a character and run the following to delete all sheet state:</i>";
+        helpString += '<pre style="white-space:normal;word-break:normal;word-wrap:normal;">'+
+                            '!rsettings --clean'+
                         '</pre>'+
                     '</div>';
         helpString += "<h4>Settings</h4>";
@@ -95,6 +103,21 @@ var reshapedSettings = reshapedSettings || (function() {
         }
         return attribute;
     },
+
+    cleanCharacter = function(who, characterId) {
+        var attr, attrI, attrName, attrs, deleted = "Deleted: ";
+        attrs = findObjs({type:'attribute', characterid:characterId});
+
+        for (attrI in attrs) {
+            attr = attrs[attrI];
+            attrName = attr.get('name');
+            if (!_.contains(cleanExclusionList, attrName)) {
+                deleted += attrName + ", ";
+                attr.remove();
+            }
+        }
+        outputUpdate(who, "Cleaned character sheet.<br />"+deleted, characterId);
+    },
     
     handleInput = function(msg) {
         var args, opts, token, character, characterId, attr, setting;
@@ -123,19 +146,23 @@ var reshapedSettings = reshapedSettings || (function() {
                 }
 
                 if (msg.selected && msg.selected.length) {
-                    for (var sel in msg.selected) {
+                    for (var sel in msg.selected) {                        
                         token = getObj('graphic', msg.selected[sel]._id);
                         //log('Selected token ' + JSON.stringify(token));
                         characterId = token.get("represents");
                         if (characterId) {
-                            character = getObj("character", characterId);
-                            for (var s in defaultSettings) {
-                                setting = defaultSettings[s];
-                                attr = myGetAttrByName(character.id, s);
-                                attr.set("current", setting);
-                                //log("Setting "+s+" to "+setting+" in "+JSON.stringify(attr));
+                            if (opts.clean) {
+                                cleanCharacter(msg.who, characterId);
+                            } else {
+                                character = getObj("character", characterId);
+                                for (var s in defaultSettings) {
+                                    setting = defaultSettings[s];
+                                    attr = myGetAttrByName(character.id, s);
+                                    attr.set("current", setting);
+                                    //log("Setting "+s+" to "+setting+" in "+JSON.stringify(attr));
+                                }
+                                outputUpdate(msg.who, "Updated character settings.", character.get("name"));
                             }
-                            outputUpdate(msg.who, "Updated character settings.", character.get("name"));
                         } else {
                             handleError(msg.who, "Token does not represent a character!", token);
                         }
