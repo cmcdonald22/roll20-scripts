@@ -14,6 +14,14 @@ var reshapedSettings = reshapedSettings || (function() {
         'initiative_to_tracker': '@{initiative_to_tracker_yes}', // can be @{initiative_to_tracker_yes} or @{initiative_to_tracker_no}
         'attacks_vs_target_ac': '@{attacks_vs_target_ac_no}', // can be @{attacks_vs_target_ac_yes} or @{attacks_vs_target_ac_no}
         'attacks_vs_target_name': '@{attacks_vs_target_name_no}' // can be @{attacks_vs_target_name_yes} or @{attacks_vs_target_name_no}
+        'hide_attack': '@{hide_attack_var}',
+        'hide_damage': '@{hide_damage_var}',
+        'hide_saving_throw_failure': '@{hide_saving_throw_failure_var}',
+        'hide_saving_throw_success': '@{hide_saving_throw_success_var}',
+        'hide_recharge': '@{hide_recharge_var}',
+        'hide_saving_throw_dc': '@{hide_saving_throw_dc_var}',
+        'hide_spell_content': '@{hide_spell_content_var}',
+        'hide_action_freetext': '@{hide_action_freetext_var}'
     },
         
     checkInstall = function() {
