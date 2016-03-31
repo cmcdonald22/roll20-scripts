@@ -4,11 +4,11 @@ var reshapedSettings = reshapedSettings || (function() {
     var version = '0.1.0',
     sheetVersion = '2.2.19+',
     defaultSettings = {
-        'output_option': '@{output_to_gm}', // can be @{output_to_gm} or @{output_to_all}
+        'output_option': '@{output_to_all}', // can be @{output_to_gm} or @{output_to_all}
         'death_save_output_option': '@{output_to_gm}', // can be @{output_to_gm} or @{output_to_all}
         'initiative_output_option': '@{output_to_gm}', // can be @{output_to_gm} or @{output_to_all}
         'show_character_name': '@{show_character_name_yes}', // can be @{show_character_name_yes} or @{show_character_name_no}
-        'roll_setting': '@{roll_2}', // can be @{roll_1}, @{roll_advantage}, @{roll_disadvantage}, or @{roll_2}
+        'roll_setting': '@{roll_1}', // can be @{roll_1}, @{roll_advantage}, @{roll_disadvantage}, or @{roll_2}
         'initiative_roll': '@{normal_initiative}', // can be @{normal_initiative}, @{advantage_on_initiative}, or @{disadvantage_on_initiative}
         'initiative_tie_breaker': '', // can be @{initiative_tie_breaker_var} or empty ('')
         'initiative_to_tracker': '@{initiative_to_tracker_yes}', // can be @{initiative_to_tracker_yes} or @{initiative_to_tracker_no}
