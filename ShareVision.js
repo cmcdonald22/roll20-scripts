@@ -2,6 +2,7 @@
 // 						Option --add to only add shared vision
 //						Option --del to only delete shared vision
 //						Option --show to print current state
+// Note: make sure not to use this script while you have a token with 
 
 var ShareVision = ShareVision || (function() {
     'use strict';
@@ -9,11 +10,10 @@ var ShareVision = ShareVision || (function() {
     var visionURL = 'https://s3.amazonaws.com/files.d20.io/images/4277467/iQYjFOsYC5JsuOPUCI9RGA/thumb.png?1401938659',
     schemaVersion = 0.2,
     lastUpdate = 1430571841,
-    version = '0.1.3a',
+    version = '0.1.4',
     
     checkInstall = function() {
         log('-=> ShareVision v'+version+' <=-  ['+(new Date(lastUpdate*1000))+']');
-//        log(state.ShareVision);
         if( ! _.has(state,'ShareVision') || state.ShareVision.version !== schemaVersion) {
             log('  > Updating Schema to v'+schemaVersion+' <');
             switch(state.ShareVision && state.ShareVision.version) {
@@ -27,7 +27,7 @@ var ShareVision = ShareVision || (function() {
             }
         }
     },
-
+    
     ch = function (c) {
         var entities = {
             '<' : 'lt',
@@ -49,13 +49,23 @@ var ShareVision = ShareVision || (function() {
         }
         return '';
     },
-
-    getCleanImgsrc = function (imgsrc) {
-        var parts = imgsrc.match(/(.*\/images\/.*)(thumb|max)(.*)$/);
-        if(parts) {
-            return parts[1]+'thumb'+parts[3];
-        }
-        return;
+    
+    outputUpdate = function(msg, tokenName) {
+        var output = "/w GM ";
+        output += "<div style=\"border: 1px solid black; background-color: #FFFFFF; padding: 3px 3px;\">";
+        output += "<p> ShareVision turned " + msg + " for</p>";
+        output += "<p><b>Token: </b>" + tokenName + "</p>";
+        output += "</div>";
+        sendChat("GM", output);
+    },
+    
+    outputState = function(msg, tokenName) {
+        var output = "/w GM ";
+        output += "<div style=\"border: 1px solid black; background-color: #FFFFFF; padding: 3px 3px;\">";
+        output += "<p> ShareVision is currently turned " + msg + " for</p>";
+        output += "<p><b>Token: </b>" + tokenName + "</p>";
+        output += "</div>";
+        sendChat("GM", output);
     },
 
     getVisionPair = function(id) {
@@ -95,7 +105,6 @@ var ShareVision = ShareVision || (function() {
         return vision;
     },
 
-
     createVision = function(id) {
         // get root obj
         var master = getObj('graphic',id),
@@ -126,12 +135,12 @@ var ShareVision = ShareVision || (function() {
             }
             state.ShareVision.vision[master.id]=slave.id;
             outputUpdate("on",master.get('name'));
-            }
+        }
     },
 
     removeVision = function(id) {
         var pair=getVisionPair(id);
-        if(pair) {
+        if (pair) {
             if(id === pair.master.id ) {
                 pair.slave.remove();
                 var master = getObj('graphic',pair.master.id);
@@ -141,18 +150,7 @@ var ShareVision = ShareVision || (function() {
         }
     },
 
-
-    shareVisionToken = function(id) {
-        var pair=getVisionPair(id);
-        if(pair) {
-            removeVision(id);
-        } else {
-            createVision(id);
-        }
-    },
-
     handleRemoveToken = function(obj) {
-        // special handling for deleting slaves?
         removeVision(obj.id);
     },
     
@@ -179,38 +177,28 @@ var ShareVision = ShareVision || (function() {
                     }
                 } 
                 else {
-                    pair.slave.set({
-                        width: prev.width,
-                        height: prev.height,
-                        top: prev.top,
-                        left: prev.left,
-                        layer: prev.layer,
-                        flipv: prev.flipv,
-                        fliph: prev.fliph
-                    });
+                    if (pair.slave) {
+                    	pair.slave.set({
+							width: prev.width,
+							height: prev.height,
+							top: prev.top,
+							left: prev.left,
+							layer: prev.layer,
+							flipv: prev.flipv,
+							fliph: prev.fliph
+						});
+					}
+					else {
+						log('Funny. I tried to move a slave token, but it does not seem to exist anymore.');
+						log('The offending token\'s name is' + pair.master.get('name'));
+						log('Resetting vision status on master token');
+						delete state.ShareVision.vision[pair.master.id];
+					}
                 }
             }
     },
     
-	outputUpdate = function(msg, tokenName) {
-        var output = "/w GM ";
-        output += "<div style=\"border: 1px solid black; background-color: #FFFFFF; padding: 3px 3px;\">";
-        output += "<p> ShareVision turned " + msg + " for</p>";
-        output += "<p><b>Token: </b>" + tokenName + "</p>";
-        output += "</div>";
-        sendChat("GM", output);
-    },
-    
-    outputState = function(msg, tokenName) {
-        var output = "/w GM ";
-        output += "<div style=\"border: 1px solid black; background-color: #FFFFFF; padding: 3px 3px;\">";
-        output += "<p> ShareVision is currently turned " + msg + " for</p>";
-        output += "<p><b>Token: </b>" + tokenName + "</p>";
-        output += "</div>";
-        sendChat("GM", output);
-    },
-    
-	handleInput = function(msg) {
+    handleInput = function(msg) {
         var args, opts, token, character, characterId, attr, setting;
     
         if (msg.type !== "api") {
@@ -233,21 +221,26 @@ var ShareVision = ShareVision || (function() {
                 
                 if (msg.selected && msg.selected.length) {
                     for (var sel in msg.selected) {
-                    	var obj = getObj('graphic', msg.selected[sel]._id);   
-                    	var pair = getVisionPair(obj.id);
-                    	if (!pair && !opts.del && !opts.show) {
-     						createVision(obj.id);
-     					}
-     					if (pair && !opts.add && !opts.show) {
-            				removeVision(obj.id);
-						}
-						if (opts.show) {
-							if(pair) {
-								outputState("on",obj.get('name'));
+                    	var obj = getObj('graphic', msg.selected[sel]._id);
+                    	if (obj) {
+                    		// Ignore slave tokens.
+							if (visionURL != obj.get('imgsrc')) {
+								var pair = getVisionPair(obj.id);
+								if (!pair && !opts.del && !opts.show) {
+									createVision(obj.id);
+								}
+								if (pair && !opts.add && !opts.show) {
+									removeVision(obj.id);
+								}
+								if (opts.show) {
+									if(pair) {
+										outputState("on",obj.get('name'));
+									}
+									else {
+										outputState("off",obj.get('name'));
+									}  
+								}
 							}
-							else {
-								outputState("off",obj.get('name'));
-							}  
 						}                     
                     }
                     return;
