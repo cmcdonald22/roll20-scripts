@@ -14,7 +14,8 @@ var reshapedSettings = reshapedSettings || (function() {
         'initiative_to_tracker': '@{initiative_to_tracker_yes}', // can be @{initiative_to_tracker_yes} or @{initiative_to_tracker_no}
         'attacks_vs_target_ac': '@{attacks_vs_target_ac_no}', // can be @{attacks_vs_target_ac_yes} or @{attacks_vs_target_ac_no}
         'attacks_vs_target_name': '@{attacks_vs_target_name_no}', // can be @{attacks_vs_target_name_yes} or @{attacks_vs_target_name_no}
-        'edit_mode': '0',
+        'edit_mode': '0', // can be 0 or on
+        'saving_throws_half_proficiency': '0', // can be 0 or on
         'hide_attack': '@{hide_attack_var}',
         'hide_damage': '@{hide_damage_var}',
         'hide_saving_throw_failure': '@{hide_saving_throw_failure_var}',
