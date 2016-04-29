@@ -25,6 +25,28 @@ var reshapedSettings = reshapedSettings || (function() {
         'hide_spell_content': '@{hide_spell_content_var}',
         'hide_action_freetext': '@{hide_action_freetext_var}'
     },
+    defaultSettingsAlt = {
+        'output_option': '@{output_to_gm}', // can be @{output_to_gm} or @{output_to_all}
+        'death_save_output_option': '@{output_to_gm}', // can be @{output_to_gm} or @{output_to_all}
+        'initiative_output_option': '@{output_to_gm}', // can be @{output_to_gm} or @{output_to_all}
+        'show_character_name': '@{show_character_name_yes}', // can be @{show_character_name_yes} or @{show_character_name_no}
+        'roll_setting': '@{roll_1}', // can be @{roll_1}, @{roll_advantage}, @{roll_disadvantage}, or @{roll_2}
+        'initiative_roll': '@{normal_initiative}', // can be @{normal_initiative}, @{advantage_on_initiative}, or @{disadvantage_on_initiative}
+        'initiative_tie_breaker': '', // can be @{initiative_tie_breaker_var} or empty ('')
+        'initiative_to_tracker': '@{initiative_to_tracker_yes}', // can be @{initiative_to_tracker_yes} or @{initiative_to_tracker_no}
+        'attacks_vs_target_ac': '@{attacks_vs_target_ac_no}', // can be @{attacks_vs_target_ac_yes} or @{attacks_vs_target_ac_no}
+        'attacks_vs_target_name': '@{attacks_vs_target_name_no}', // can be @{attacks_vs_target_name_yes} or @{attacks_vs_target_name_no}
+        'edit_mode': '0', // can be 0 or on
+        'saving_throws_half_proficiency': '0', // can be 0 or on
+        'hide_attack': '',
+        'hide_damage': '',
+        'hide_saving_throw_failure': '',
+        'hide_saving_throw_success': '',
+        'hide_recharge': '',
+        'hide_saving_throw_dc': '',
+        'hide_spell_content': '',
+        'hide_action_freetext': ''
+    },
     cleanExclusionList = ['version', 'is_npc', 'tab', 'edit_mode'],
         
     checkInstall = function() {
@@ -155,6 +177,15 @@ var reshapedSettings = reshapedSettings || (function() {
                         if (characterId) {
                             if (opts.clean) {
                                 cleanCharacter(msg.who, characterId);
+                            } 
+                            if (opts.alt) {
+                                character = getObj("character", characterId);
+                                for (var s in defaultSettingsAlt) {
+                                    setting = defaultSettingsAlt[s];
+                                    attr = myGetAttrByName(character.id, s);
+                                    attr.set("current", setting);
+                                    //log("Setting "+s+" to "+setting+" in "+JSON.stringify(attr));
+                                }
                             } else {
                                 character = getObj("character", characterId);
                                 for (var s in defaultSettings) {
