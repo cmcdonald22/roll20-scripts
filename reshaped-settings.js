@@ -23,8 +23,8 @@ var reshapedSettings = reshapedSettings || (function() {
         'hide_saving_throw_dc': '{{hide_saving_throw_dc=1}}', // can be 0 or {{hide_saving_throw_dc=1}}
         'hide_spell_content': '{{hide_spell_content=1}}', // can be 0 or {{hide_spell_content=1}}
         'hide_action_freetext': '{{hide_freetext=1}}' // can be 0 or {{hide_freetext=1}}
+//        'roll_setting': '{{ignore=[[0', // can be {{ignore=[[0 OR  adv {{ignore=[[0 OR dis {{ignore=[[0 OR {{roll2=[[d20@{d20_mod}
 
-        //        'roll_setting': '@{roll_1}', // can be @{roll_1}, @{roll_advantage}, @{roll_disadvantage}, or @{roll_2} - doesn't work
     },
     defaultSettingsAlt = {
         'output_option': '@{output_to_gm}', // can be @{output_to_gm} or @{output_to_all}
