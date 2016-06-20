@@ -4,26 +4,27 @@ var reshapedSettings = reshapedSettings || (function() {
     var version = '0.2.0',
     sheetVersion = '2.2.19+',
     defaultSettings = {
-        'output_option': '@{output_to_all}', // can be @{output_to_gm} or @{output_to_all}
-        'death_save_output_option': '@{output_to_gm}', // can be @{output_to_gm} or @{output_to_all}
-        'initiative_output_option': '@{output_to_gm}', // can be @{output_to_gm} or @{output_to_all}
-        'show_character_name': '@{show_character_name_yes}', // can be @{show_character_name_yes} or @{show_character_name_no}
-        'roll_setting': '@{roll_1}', // can be @{roll_1}, @{roll_advantage}, @{roll_disadvantage}, or @{roll_2}
+        'output_option': '', // can be '' or '/w GM'
+        'death_save_output_option': '', // can be @{output_option} or '/w GM' or ''
+        'initiative_output_option': '', // can be @{output_option} or '/w GM' or ''
+        'show_character_name': '{{show_character_name=1}}', // can be '' or {{show_character_name=1}}
         'initiative_roll': '@{normal_initiative}', // can be @{normal_initiative}, @{advantage_on_initiative}, or @{disadvantage_on_initiative}
-        'initiative_tie_breaker': '', // can be @{initiative_tie_breaker_var} or empty ('')
-        'initiative_to_tracker': '@{initiative_to_tracker_yes}', // can be @{initiative_to_tracker_yes} or @{initiative_to_tracker_no}
-        'attacks_vs_target_ac': '@{attacks_vs_target_ac_no}', // can be @{attacks_vs_target_ac_yes} or @{attacks_vs_target_ac_no}
-        'attacks_vs_target_name': '@{attacks_vs_target_name_no}', // can be @{attacks_vs_target_name_yes} or @{attacks_vs_target_name_no}
+        'initiative_to_tracker': '@{selected|initiative_formula} &{tracker}', // can be @{initiative_formula} (NO) or @{selected|initiative_formula} &{tracker} (YES)
+        'initiative_tie_breaker': '0', // can be 0 or [[@{initiative} / 100]][tie breaker]
+        'attacks_vs_target_ac': '', // can be '' or [[@{target|AC}]]
+        'attacks_vs_target_name': '', // can be '' or @{target|token_name}
         'edit_mode': '0', // can be 0 or on
         'saving_throws_half_proficiency': '0', // can be 0 or on
-        'hide_attack': '@{hide_attack_var}',
-        'hide_damage': '@{hide_damage_var}',
-        'hide_saving_throw_failure': '@{hide_saving_throw_failure_var}',
-        'hide_saving_throw_success': '@{hide_saving_throw_success_var}',
-        'hide_recharge': '@{hide_recharge_var}',
-        'hide_saving_throw_dc': '@{hide_saving_throw_dc_var}',
-        'hide_spell_content': '@{hide_spell_content_var}',
-        'hide_action_freetext': '@{hide_action_freetext_var}'
+        'hide_attack': '{{hide_attack=1}}', // can be 0 or {{hide_attack=1}}
+        'hide_damage': '0', // can be 0 or {{hide_damage=1}}
+        'hide_saving_throw_failure': '{{hide_saving_throw_failure=1}}', // can be 0 or {{hide_saving_throw_failure=1}}
+        'hide_saving_throw_success': '{{hide_saving_throw_success=1}}', // can be 0 or {{hide_saving_throw_success=1}}
+        'hide_recharge': '{{hide_recharge=1}}', // can be 0 or {{hide_recharge=1}}
+        'hide_saving_throw_dc': '{{hide_saving_throw_dc=1}}', // can be 0 or {{hide_saving_throw_dc=1}}
+        'hide_spell_content': '{{hide_spell_content=1}}', // can be 0 or {{hide_spell_content=1}}
+        'hide_action_freetext': '{{hide_freetext=1}}' // can be 0 or {{hide_freetext=1}}
+
+        //        'roll_setting': '@{roll_1}', // can be @{roll_1}, @{roll_advantage}, @{roll_disadvantage}, or @{roll_2} - doesn't work
     },
     defaultSettingsAlt = {
         'output_option': '@{output_to_gm}', // can be @{output_to_gm} or @{output_to_all}
