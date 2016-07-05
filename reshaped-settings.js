@@ -25,7 +25,7 @@ var reshapedSettings = reshapedSettings || (function() {
         'hide_recharge': '{{hide_recharge=1}}', // can be 0 or {{hide_recharge=1}}
         'hide_spell_content': '{{hide_spell_content=1}}', // can be 0 or {{hide_spell_content=1}}
         'hide_action_freetext': '{{hide_freetext=1}}', // can be 0 or {{hide_freetext=1}}
-        'shaped_d20': '10d1cs0cf0' // whatever will be rolled instead of a d20
+        'shaped_d20': '10d1cf0' // whatever will be rolled instead of a d20
 //        'roll_setting': '{{ignore=[[0', // can be {{ignore=[[0 OR  adv {{ignore=[[0 OR dis {{ignore=[[0 OR {{roll2=[[d20@{d20_mod}
 
     },
