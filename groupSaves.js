@@ -16,9 +16,9 @@ var groupSaves = groupSaves || (function() {
         'Will': 'will_saving_throw_mod'
     },
     
-    var die = "d20",
+    die = "d20",
     
-    var whisper = true,
+    whisper = true,
     
     checkInstall = function() {
         log('groupSaves v'+version+' for D&D 5E Reshaped '+sheetVersion+' is ready!');
