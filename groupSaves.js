@@ -1,9 +1,10 @@
 var groupSaves = groupSaves || (function() {
     'use strict';
     
-    var version = '0.1.0',
+    var version = '0.1.1',
     sheetVersion = '5.0.0+',
    
+   //Config
     attrList = {
         'Strength': 'strength_saving_throw_mod',
         'Dexterity': 'dexterity_saving_throw_mod',
@@ -17,8 +18,10 @@ var groupSaves = groupSaves || (function() {
     },
     
     die = "d20",
+    whisperToGM = true,     // whisper results to GM or make them public
+    useTokenName = true, // Uses name of the token if true, character name if false.
     
-    whisper = true,
+    //Config End
     
     checkInstall = function() {
         log('groupSaves v'+version+' for D&D 5E Reshaped '+sheetVersion+' is ready!');
@@ -83,11 +86,11 @@ var groupSaves = groupSaves || (function() {
                 }
 				
 				var output = ``;
-                if (whisper) {
+                if (whisperToGM) {
                     output += `/w GM `;
                 }
         		output += `<div style=\"border: 1px solid black; background-color: #FFFFFF; padding: 3px 3px;\">`;
-        		output += `<h4> ${attr} Saves</h4>`;
+        		output += `<h4> ${attr} Defense</h4>`;
 
         
                 if (msg.selected && msg.selected.length) {
@@ -97,7 +100,12 @@ var groupSaves = groupSaves || (function() {
                         characterId = token.get("represents");
                         if (characterId) {
                             character = getObj("character", characterId);
-                 		    output += `<p><b>${character.get("name")}:</b> [[0d0 + ${die} + @{${character.get("name")}|${attrMod}}]]</p>`; 
+                 		    if (useTokenName) {
+                                output += `<p><b>${token.get("name")}:</b> [[0d0 + ${die} + @{${character.get("name")}|${attrMod}}]]</p>`
+                 		    }
+                            else {
+                                output += `<p><b>${character.get("name")}:</b> [[0d0 + ${die} + @{${character.get("name")}|${attrMod}}]]</p>`    
+                            }
                         } 
                     }
                 }
