@@ -29,7 +29,11 @@ var groupCheck = groupCheck || (function() {
 	
 	printHelp = function(who) {
 		var helpString;
-		helpString = "Help not available currently. Sorry."
+		helpString = "<div style=\"border: 1px solid black; background-color: #FFFFFF; padding: 3px 3px;\">";
+		helpString += "<h4>groupCheck Help</h4>";
+		helpString += "<p> Usage:</p>";
+		helpString += "e.g. !group-check --Strength Save";
+		helpString += "</div>";
 		sendChat(who, "/w " + who + " " + helpString);
 	},
 	
