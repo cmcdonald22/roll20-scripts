@@ -91,7 +91,7 @@ var groupCheck = groupCheck || (function() {
 				}
 				
 				var output = ``;
-				if ((whisperToGM || opts.gm) && !opts.public) {
+				if ((whisperToGM || opts.GM) && !opts.Public) {
 					output += `/w GM `;
 				}
 				output += `<div style=\"border: 1px solid black; background-color: #FFFFFF; padding: 3px 3px;\">`;
