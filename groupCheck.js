@@ -1,6 +1,6 @@
 var groupCheck = groupCheck || (function() {
 	'use strict';
-	var version = '0.2',
+	var version = '0.2.1',
     	
     	// Config Start
 	// Attribute list is for D&D 5E Shaped sheet
@@ -9,12 +9,18 @@ var groupCheck = groupCheck || (function() {
 		'Strength Save': 'strength_saving_throw_mod',
 		'Dexterity Save': 'dexterity_saving_throw_mod',
 		'Constitution Save': 'constitution_saving_throw_mod',
-		'IntelligenceS Save': 'intelligence_saving_throw_mod',
+		'Intelligence Save': 'intelligence_saving_throw_mod',
 		'Wisdom Save': 'wisdom_saving_throw_mod',
 		'Charisma Save': 'charisma_saving_throw_mod',
 		'Fortitude Save': 'fortitude_saving_throw_mod',
 		'Reflex Save': 'reflex_saving_throw_mod',
-		'Will Save': 'will_saving_throw_mod'
+		'Will Save': 'will_saving_throw_mod',
+		'Strength Check': 'strength_check_mod_formula',
+		'Dexterity Check': 'dexterity_check_mod_formula',
+		'Constitution Check': 'constitution_check_mod_formula',
+		'Intelligence Check': 'intelligence_check_mod_formula',
+		'Wisdom Check': 'wisdom_check_mod_formula',
+		'Charisma Check': 'charisma_check_mod_formula'
 	},
 	
 	die = "d20",				// standard die to add to modifier
@@ -30,10 +36,14 @@ var groupCheck = groupCheck || (function() {
 	printHelp = function(who) {
 		var helpString;
 		helpString = "<div style=\"border: 1px solid black; background-color: #FFFFFF; padding: 3px 3px;\">";
-		helpString += "<h4>groupCheck Help</h4>";
-		helpString += "<p> Usage:</p>";
-		helpString += "e.g. !group-check --Strength Save";
-		helpString += "</div>";
+		helpString += "<h2>groupCheck Help</h2>";
+		helpString += "<p> Usage: !group-check [--GM|Public] --Check Name</p>";
+		helpString += "";
+		helpString += "<p>The following checks are available:<br>";
+		for (var s in attrList) {
+			helpString += `<b>${s}</b>, `
+		}
+		helpString += "</p></div>";
 		sendChat(who, "/w " + who + " " + helpString);
 	},
 	
@@ -58,12 +68,10 @@ var groupCheck = groupCheck || (function() {
 		args = msg.content.split(/\s+--/);
 		switch(args.shift()) {
 			case '!group-check':
-				if (args.length > 1) {
-					handleError(msg.who, "Do not supply more than one argument.", args);
-					return;
-				}
 				opts = {};
-				opts[args[0]] = true;
+				for (var arg in args) {
+					opts[args[arg]] = true;
+				}
 
 				if (opts.help) {
 					printHelp(msg.who);
@@ -72,23 +80,23 @@ var groupCheck = groupCheck || (function() {
 				
 				for (var s in attrList) {
 					if (opts[s]) {
-							attr = s;
-							attrMod = attrList[s];
+						attr = s;
+						attrMod = attrList[s];
 					}
 				}
 				
 				if (!attr) {
-					handleError(msg.who, "No valid argument supplied", opts);
+					handleError(msg.who, "No valid argument supplied. Run !group-check --help for more info.", opts);
 					return;
 				}
 				
 				var output = ``;
-				if (whisperToGM) {
+				if ((whisperToGM || opts.gm) && !opts.public) {
 					output += `/w GM `;
 				}
 				output += `<div style=\"border: 1px solid black; background-color: #FFFFFF; padding: 3px 3px;\">`;
 				output += `<h3>${attr}s:</h3>`;
-                		output += `<br>`;
+        			output += `<br>`;
 
 				if (msg.selected && msg.selected.length) {
 					for (var sel in msg.selected) {						   
