@@ -1,6 +1,6 @@
 var groupCheck = groupCheck || (function() {
-	'use strict';
-	var version = '0.3.1',
+    'use strict';
+    var version = '0.4',
     commandOutput = ``,
     // Config Start
 	// Attribute list is for D&D 5E Shaped sheet
@@ -41,10 +41,14 @@ var groupCheck = groupCheck || (function() {
 		'Survival': 'repeating_skill_$17_formula'
 	},
 	
-	die = "d20",			// standard die to add to modifier
-	whisperToGM = false,    // whisper results to GM or make them public
+	die = "d20",			// Standard die to add to modifier. If constant, add 0d0 to
+							// work around sendChat bug. E.g. 0d0 + 10.
+	whisperToGM = false,    // Whisper results to GM or make them public by default.
 	useTokenName = true,	// Uses name of the token if true, character name if false.
-	rollTwice = false,		// Always roll twice to use 5E advantage/disadvantage
+	rollTwice = false,		// Always roll two dice.
+	useRollSetting = false, // Use 5E Shaped integrated roll setting. If you use this, do 
+							// not set rollTwice = true or use --roll2, things will 
+							// probably break in this case.
     
 	// Config End
 	
@@ -84,7 +88,7 @@ var groupCheck = groupCheck || (function() {
 
 	
 	handleInput = function(msg) {
-		var args, opts, token, character, characterId, attr, attrMod, name, dieUsed;
+		var args, opts, token, character, characterId, attr, attrMod, name, dieUsed, rollTwoOnce, RSAppendix;
 	
 		if (msg.type !== "api") {
 			return;
@@ -124,40 +128,64 @@ var groupCheck = groupCheck || (function() {
                 output += `<br>`;
                 
                 dieUsed = die;
-                if (opts.adv) {
+                RSAppendix = ``;
+                if (opts.adv && !opts.roll2) {
                     dieUsed = "2d20kh1";
-                    output += `Rolls are at advantage.<br>`;
-                } else if (opts.disadv) {
+                    RSAppendix = ` (Advantage)`;
+                    
+                } else if (opts.disadv && !opts.roll2) {
                     dieUsed = "2d20kl1";
-                    output += `Rolls are at disadvantage.<br>`;
+                    RSAppendix = ` (Disadvantage)`;
                 }
-                
-			if (msg.selected && msg.selected.length) {
-				for (var sel in msg.selected) {						   
-					token = getObj('graphic', msg.selected[sel]._id);
-					characterId = token.get("represents");
+
+				if (msg.selected && msg.selected.length) {
+					for (var sel in msg.selected) {						   
+						token = getObj('graphic', msg.selected[sel]._id);
+						characterId = token.get("represents");
 					
-					if (characterId) {
-						character = getObj("character", characterId);
-						if (useTokenName) {
-							name = token.get("name");
-						}
-						else {
-							name = character.get("name");
-						}
-						if (opts.roll2 || rollTwice) {
-							output += `<p><b>${name}:</b> [[0d0 + ${dieUsed} + @{${character.get("name")}|${attrMod}}]]`;
-							output += ` | [[0d0 + ${dieUsed} + @{${character.get("name")}|${attrMod}}]]</p>`;
-						} else {
-							output += `<p><b>${name}:</b> [[0d0 + ${dieUsed} + @{${character.get("name")}|${attrMod}}]]</p>`;
-						}
-					} 
+						if (characterId) {
+							character = getObj("character", characterId);
+							if (useRollSetting || opts.rollsetting) {
+								switch(getAttrByName(characterId,"roll_setting")) {
+									case `{{ignore=[[0` :
+										dieUsed = die;
+                                        RSAppendix = ``;
+										break;
+                                    case `adv {{ignore=[[0`:
+										dieUsed = "2d20kh1";
+                                        RSAppendix = ` (Advantage)`;
+										break;
+									case `dis {{ignore=[[0` :
+										dieUsed = "2d20kl1";
+                                        RSAppendix = ` (Disadvantage)`;
+                                        break;
+									default:
+										dieUsed = die;
+                                        RSAppendix = ``;
+                                        rollTwoOnce = true;
+								} 
+							}
+							if (useTokenName) {
+								name = token.get("name");
+							}
+							else {
+								name = character.get("name");
+							}
+							if ((opts.roll2 || rollTwice) || rollTwoOnce) {
+								output += `<p><b>${name}:</b> [[${dieUsed} + @{${character.get("name")}|${attrMod}}]]`;
+								output += ` | [[${dieUsed} + @{${character.get("name")}|${attrMod}}]]</p>`;
+								rollTwoOnce = false;
+							} else {
+								output += `<p><b>${name}:</b> [[${dieUsed} + @{${character.get("name")}|${attrMod}}]]${RSAppendix}</p>`;
+                                
+							}
+						} 
+					}
 				}
-			}
 				
-			output += `</div>`;
-			sendChat(msg.who, output);
-			return;
+				output += `</div>`;
+				sendChat(msg.who, output);
+				return;
 		} 
 		return; 
 	},
