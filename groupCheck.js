@@ -1,7 +1,7 @@
 var groupCheck = groupCheck || (function() {
 	'use strict';
 	var version = '0.2.1',
-    	
+    	commandOutput = ``,
     	// Config Start
 	// Attribute list is for D&D 5E Shaped sheet
 	
@@ -23,13 +23,20 @@ var groupCheck = groupCheck || (function() {
 		'Charisma Check': 'charisma_check_mod_formula'
 	},
 	
-	die = "d20",				// standard die to add to modifier
-	whisperToGM = false,    	// whisper results to GM or make them public
-	useTokenName = true,        // Uses name of the token if true, character name if false.
-	
+	die = "d20",		// standard die to add to modifier
+	whisperToGM = false,    // whisper results to GM or make them public
+	useTokenName = true,	// Uses name of the token if true, character name if false.
+	rollTwice = false,	// Always roll twice to use 5E advantage/disadvantage
+    
 	// Config End
 	
 	checkInstall = function() {
+		commandOutput += `<div style=\"border: 1px solid black; background-color: #FFFFFF; padding: 3px 3px;\">`;
+		commandOutput += `<h3>Available commands:</h3>`;
+		for (var s in attrList) {
+			commandOutput += `[${s}](!group-check --${s})`
+		}
+		commandOutput += `</div>`;
 		log('groupSaves v'+version+' is ready!');
 	},
 	
@@ -59,7 +66,7 @@ var groupCheck = groupCheck || (function() {
 
 	
 	handleInput = function(msg) {
-		var args, opts, token, character, characterId, attr, attrMod, name;
+		var args, opts, token, character, characterId, attr, attrMod, name, dieUsed;
 	
 		if (msg.type !== "api") {
 			return;
@@ -86,7 +93,7 @@ var groupCheck = groupCheck || (function() {
 				}
 				
 				if (!attr) {
-					handleError(msg.who, "No valid argument supplied. Run !group-check --help for more info.", opts);
+                    sendChat(msg.who, commandOutput);
 					return;
 				}
 				
@@ -96,29 +103,43 @@ var groupCheck = groupCheck || (function() {
 				}
 				output += `<div style=\"border: 1px solid black; background-color: #FFFFFF; padding: 3px 3px;\">`;
 				output += `<h3>${attr}s:</h3>`;
-        			output += `<br>`;
-
-				if (msg.selected && msg.selected.length) {
-					for (var sel in msg.selected) {						   
-						token = getObj('graphic', msg.selected[sel]._id);
-						characterId = token.get("represents");
-						
-						if (characterId) {
-							character = getObj("character", characterId);
-							if (useTokenName) {
-								name = token.get("name");
-							}
-							else {
-								name = character.get("name");
-							}
-							output += `<p><b>${name}:</b> [[0d0 + ${die} + @{${character.get("name")}|${attrMod}}]]</p>`;
-						} 
-					}
+                output += `<br>`;
+                
+                dieUsed = die;
+                if (opts.adv) {
+                    dieUsed = "2d20kh1";
+                    output += `Rolls are at advantage.<br>`;
+                } else if (opts.disadv) {
+                    dieUsed = "2d20kl1";
+                    output += `Rolls are at disadvantage.<br>`;
+                }
+                
+			if (msg.selected && msg.selected.length) {
+				for (var sel in msg.selected) {						   
+					token = getObj('graphic', msg.selected[sel]._id);
+					characterId = token.get("represents");
+					
+					if (characterId) {
+						character = getObj("character", characterId);
+						if (useTokenName) {
+							name = token.get("name");
+						}
+						else {
+							name = character.get("name");
+						}
+						if (opts.roll2 || rollTwice) {
+							output += `<p><b>${name}:</b> [[0d0 + ${dieUsed} + @{${character.get("name")}|${attrMod}}]]`;
+							output += ` | [[0d0 + ${dieUsed} + @{${character.get("name")}|${attrMod}}]]</p>`;
+						} else {
+							output += `<p><b>${name}:</b> [[0d0 + ${dieUsed} + @{${character.get("name")}|${attrMod}}]]</p>`;
+						}
+					} 
 				}
+			}
 				
-				output += `</div>`;
-				sendChat(msg.who, output);
-				return;
+			output += `</div>`;
+			sendChat(msg.who, output);
+			return;
 		} 
 		return; 
 	},
