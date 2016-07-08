@@ -140,7 +140,10 @@ var groupCheck = groupCheck || (function() {
                     dieUsed = "2d20kl1";
                     RSAppendix = ` (Disadvantage)`;
                 }
-
+				
+				var rollSetting = (useRollSetting || opts.rollsetting) && !opts.roll2 && !opts.disadv && !opts.adv;
+				var roll2 = opts.roll2 || (rollTwice && !opts.rollsetting && !opts.adv && !opts.disadv));
+				
 				if (msg.selected && msg.selected.length) {
 					for (var sel in msg.selected) {						   
 						token = getObj('graphic', msg.selected[sel]._id);
@@ -148,7 +151,7 @@ var groupCheck = groupCheck || (function() {
 					
 						if (characterId) {
 							character = getObj("character", characterId);
-							if ((useRollSetting || opts.rollsetting) && !opts.roll2 && !opts.disadv && !opts.adv) {
+							if (rollSetting) {
 								switch(getAttrByName(characterId,"roll_setting")) {
 									case `{{ignore=[[0` :
 										dieUsed = die;
@@ -174,7 +177,7 @@ var groupCheck = groupCheck || (function() {
 							else {
 								name = character.get("name");
 							}
-							if ((opts.roll2 || (rollTwice && !opts.rollsetting && !opts.adv && !opts.disadv)) || rollTwoOnce) {
+							if (roll2 || rollTwoOnce) {
 								output += `<p><b>${name}:</b> [[${dieUsed} + @{${character.get("name")}|${attrMod}}]]`;
 								output += ` | [[${dieUsed} + @{${character.get("name")}|${attrMod}}]]</p>`;
 								rollTwoOnce = false;
