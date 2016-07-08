@@ -36,7 +36,8 @@ var groupCheck = groupCheck || (function() {
 		'Performance': 'repeating_skill_$12_formula',
 		'Persuasion': 'repeating_skill_$13_formula',
 		'Religion': 'repeating_skill_$14_formula',
-		'Stealth': 'repeating_skill_$15_formula',
+		'Sleight of Hand': 'repeating_skill_$15_formula',
+		'Stealth': 'repeating_skill_$16_formula',
 		'Survival': 'repeating_skill_$17_formula'
 	},
 	
