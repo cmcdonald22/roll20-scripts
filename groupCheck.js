@@ -55,7 +55,7 @@ var groupCheck = groupCheck || (function() {
 			commandOutput += `[${s}](!group-check --${s})`
 		}
 		commandOutput += `</div>`;
-		log('groupSaves v'+version+' is ready!');
+		log('groupCheck v'+version+' is ready!');
 	},
 	
 	printHelp = function(who) {
