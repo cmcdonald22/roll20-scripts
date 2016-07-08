@@ -1,6 +1,6 @@
 var groupCheck = groupCheck || (function() {
     'use strict';
-    var version = '0.4.1',
+    var version = '0.4.2',
     commandOutput = ``,
     // Config Start
 	// Attribute list is for D&D 5E Shaped sheet
@@ -148,7 +148,7 @@ var groupCheck = groupCheck || (function() {
 					
 						if (characterId) {
 							character = getObj("character", characterId);
-							if ((useRollSetting || opts.rollsetting) && !opts.roll2) {
+							if ((useRollSetting || opts.rollsetting) && !opts.roll2 && !opts.disadv && !opts.adv) {
 								switch(getAttrByName(characterId,"roll_setting")) {
 									case `{{ignore=[[0` :
 										dieUsed = die;
@@ -174,7 +174,7 @@ var groupCheck = groupCheck || (function() {
 							else {
 								name = character.get("name");
 							}
-							if ((opts.roll2 || (rollTwice && !opts.rollsetting)) || rollTwoOnce) {
+							if ((opts.roll2 || (rollTwice && !opts.rollsetting && !opts.adv && !opts.disadv)) || rollTwoOnce) {
 								output += `<p><b>${name}:</b> [[${dieUsed} + @{${character.get("name")}|${attrMod}}]]`;
 								output += ` | [[${dieUsed} + @{${character.get("name")}|${attrMod}}]]</p>`;
 								rollTwoOnce = false;
