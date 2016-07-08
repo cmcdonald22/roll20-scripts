@@ -142,7 +142,7 @@ var groupCheck = groupCheck || (function() {
                 }
 				
 				var rollSetting = (useRollSetting || opts.rollsetting) && !opts.roll2 && !opts.disadv && !opts.adv;
-				var roll2 = opts.roll2 || (rollTwice && !opts.rollsetting && !opts.adv && !opts.disadv));
+				var roll2 = opts.roll2 || (rollTwice && !opts.rollsetting && !opts.adv && !opts.disadv);
 				
 				if (msg.selected && msg.selected.length) {
 					for (var sel in msg.selected) {						   
