@@ -1,6 +1,6 @@
 var groupCheck = groupCheck || (function() {
     'use strict';
-    var version = '0.4',
+    var version = '0.4.1',
     commandOutput = ``,
     // Config Start
 	// Attribute list is for D&D 5E Shaped sheet
@@ -46,9 +46,8 @@ var groupCheck = groupCheck || (function() {
 	whisperToGM = false,    // Whisper results to GM or make them public by default.
 	useTokenName = true,	// Uses name of the token if true, character name if false.
 	rollTwice = false,		// Always roll two dice.
-	useRollSetting = false, // Use 5E Shaped integrated roll setting. If you use this, do 
-							// not set rollTwice = true or use --roll2, things will 
-							// probably break in this case.
+	useRollSetting = false, // Use 5E Shaped integrated roll setting. If both this and
+							// rollTwice are true, we will default to rollTwice.
     
 	// Config End
 	
@@ -60,6 +59,10 @@ var groupCheck = groupCheck || (function() {
 		}
 		commandOutput += `</div>`;
 		log('groupCheck v'+version+' is ready!');
+		if (rollTwice && useRollSetting) {
+			useRollSetting = false;
+			log('groupCheck: Both rollTwice and useRollSetting are set to true. Defaulting to roll2.');
+		}
 	},
 	
 	printHelp = function(who) {
@@ -145,7 +148,7 @@ var groupCheck = groupCheck || (function() {
 					
 						if (characterId) {
 							character = getObj("character", characterId);
-							if (useRollSetting || opts.rollsetting) {
+							if ((useRollSetting || opts.rollsetting) && !opts.roll2) {
 								switch(getAttrByName(characterId,"roll_setting")) {
 									case `{{ignore=[[0` :
 										dieUsed = die;
@@ -171,13 +174,12 @@ var groupCheck = groupCheck || (function() {
 							else {
 								name = character.get("name");
 							}
-							if ((opts.roll2 || rollTwice) || rollTwoOnce) {
+							if ((opts.roll2 || (rollTwice && !opts.rollsetting)) || rollTwoOnce) {
 								output += `<p><b>${name}:</b> [[${dieUsed} + @{${character.get("name")}|${attrMod}}]]`;
 								output += ` | [[${dieUsed} + @{${character.get("name")}|${attrMod}}]]</p>`;
 								rollTwoOnce = false;
 							} else {
 								output += `<p><b>${name}:</b> [[${dieUsed} + @{${character.get("name")}|${attrMod}}]]${RSAppendix}</p>`;
-                                
 							}
 						} 
 					}
