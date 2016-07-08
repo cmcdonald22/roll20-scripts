@@ -119,7 +119,7 @@ var groupCheck = groupCheck || (function() {
 					output += `/w GM `;
 				}
 				output += `<div style=\"border: 1px solid black; background-color: #FFFFFF; padding: 3px 3px;\">`;
-				output += `<h3>${attr}s:</h3>`;
+				output += `<h3>${attr}:</h3>`;
                 output += `<br>`;
                 
                 dieUsed = die;
