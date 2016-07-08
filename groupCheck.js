@@ -1,8 +1,8 @@
 var groupCheck = groupCheck || (function() {
 	'use strict';
-	var version = '0.2.1',
-    	commandOutput = ``,
-    	// Config Start
+	var version = '0.3.1',
+    commandOutput = ``,
+    // Config Start
 	// Attribute list is for D&D 5E Shaped sheet
 	
 	attrList = {
@@ -12,21 +12,38 @@ var groupCheck = groupCheck || (function() {
 		'Intelligence Save': 'intelligence_saving_throw_mod',
 		'Wisdom Save': 'wisdom_saving_throw_mod',
 		'Charisma Save': 'charisma_saving_throw_mod',
-		'Fortitude Save': 'fortitude_saving_throw_mod',
-		'Reflex Save': 'reflex_saving_throw_mod',
-		'Will Save': 'will_saving_throw_mod',
+//		'Fortitude Save': 'fortitude_saving_throw_mod',
+//		'Reflex Save': 'reflex_saving_throw_mod',
+//		'Will Save': 'will_saving_throw_mod',
 		'Strength Check': 'strength_check_mod_formula',
 		'Dexterity Check': 'dexterity_check_mod_formula',
 		'Constitution Check': 'constitution_check_mod_formula',
 		'Intelligence Check': 'intelligence_check_mod_formula',
 		'Wisdom Check': 'wisdom_check_mod_formula',
-		'Charisma Check': 'charisma_check_mod_formula'
+		'Charisma Check': 'charisma_check_mod_formula',
+		'Acrobatics': 'repeating_skill_$0_formula}',
+		'Animal Handling': 'repeating_skill_$1_formula}',
+		'Arcana': 'repeating_skill_$2_formula}',
+		'Athletics': 'repeating_skill_$3_formula}',
+		'Deception': 'repeating_skill_$4_formula}',
+		'History': 'repeating_skill_$5_formula}',
+		'Insight': 'repeating_skill_$6_formula}',
+		'Intimidation': 'repeating_skill_$7_formula}',
+		'Investigation': 'repeating_skill_$8_formula}',
+		'Medicine': 'repeating_skill_$9_formula}',
+		'Nature': 'repeating_skill_$10_formula}',
+		'Perception': 'repeating_skill_$11_formula}',
+		'Performance': 'repeating_skill_$12_formula}',
+		'Persuasion': 'repeating_skill_$13_formula}',
+		'Religion': 'repeating_skill_$14_formula}',
+		'Stealth': 'repeating_skill_$15_formula}',
+		'Survival': 'repeating_skill_$17_formula}'
 	},
 	
-	die = "d20",		// standard die to add to modifier
+	die = "d20",			// standard die to add to modifier
 	whisperToGM = false,    // whisper results to GM or make them public
 	useTokenName = true,	// Uses name of the token if true, character name if false.
-	rollTwice = false,	// Always roll twice to use 5E advantage/disadvantage
+	rollTwice = false,		// Always roll twice to use 5E advantage/disadvantage
     
 	// Config End
 	
