@@ -1,6 +1,6 @@
 var groupCheck = groupCheck || (function() {
     'use strict';
-    var version = '0.4.2',
+    var version = '0.4.3',
     commandOutput = ``,
     // Config Start
 	// Attribute list is for D&D 5E Shaped sheet
@@ -55,7 +55,7 @@ var groupCheck = groupCheck || (function() {
 		commandOutput += `<div style=\"border: 1px solid black; background-color: #FFFFFF; padding: 3px 3px;\">`;
 		commandOutput += `<h3>Available commands:</h3>`;
 		for (var s in attrList) {
-			commandOutput += `[${s}](!group-check --${s})`
+			commandOutput += `[${s}](!group-check --${s})`;
 		}
 		commandOutput += `</div>`;
 		log('groupCheck v'+version+' is ready!');
@@ -67,7 +67,8 @@ var groupCheck = groupCheck || (function() {
 	
 	printHelp = function(who) {
 		var helpString;
-		helpString = "<div style=\"border: 1px solid black; background-color: #FFFFFF; padding: 3px 3px;\">";
+		helpString = `/w ${who} `;
+		helpString += "<div style=\"border: 1px solid black; background-color: #FFFFFF; padding: 3px 3px;\">";
 		helpString += "<h2>groupCheck Help</h2>";
 		helpString += "<p> Usage: !group-check [--GM|Public] --Check Name</p>";
 		helpString += "";
@@ -76,17 +77,17 @@ var groupCheck = groupCheck || (function() {
 			helpString += `<b>${s}</b>, `
 		}
 		helpString += "</p></div>";
-		sendChat(who, "/w " + who + " " + helpString);
+		sendChat(who, helpString, null, {noarchive:true});
 	},
 	
 	handleError = function(who, errorMsg, opts) {
-		var output = "/w " + who;
+		var output = `/w ${who} `;
 		output += "<div style=\"border: 1px solid black; background-color: #FFBABA; padding: 3px 3px;\">";
 		output += "<h4>Error</h4>";
 		output += "<p>"+errorMsg+"</p>";
 		output += "Input was: <p>" + JSON.stringify(opts) + "</p>";
 		output += "</div>";
-		sendChat(who, output);
+		sendChat(who, output, null, {noarchive:true});
 	},
 
 	
@@ -118,7 +119,7 @@ var groupCheck = groupCheck || (function() {
 				}
 				
 				if (!attr) {
-                    sendChat(msg.who, commandOutput);
+                    sendChat(msg.who, `/w ${msg.who} ` + commandOutput, null, {noarchive:true});
 					return;
 				}
 				
@@ -126,6 +127,7 @@ var groupCheck = groupCheck || (function() {
 				if ((whisperToGM || opts.GM) && !opts.Public) {
 					output += `/w GM `;
 				}
+				
 				output += `<div style=\"border: 1px solid black; background-color: #FFFFFF; padding: 3px 3px;\">`;
 				output += `<h3>${attr}:</h3>`;
                 output += `<br>`;
