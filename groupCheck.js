@@ -1,8 +1,7 @@
 var groupCheck = groupCheck || (function() {
-    'use strict';
-    var version = '0.4.3',
-    commandOutput = ``,
-    // Config Start
+	'use strict';
+	var version = '0.5',
+	// Config Start
 	// Attribute list is for D&D 5E Shaped sheet
 	
 	attrList = {
@@ -43,26 +42,20 @@ var groupCheck = groupCheck || (function() {
 	
 	die = "d20",			// Standard die to add to modifier. If constant, add 0d0 to
 							// work around sendChat bug. E.g. 0d0 + 10.
-	whisperToGM = false,    // Whisper results to GM or make them public by default.
+	whisperToGM = false,	// Whisper results to GM or make them public by default.
 	useTokenName = true,	// Uses name of the token if true, character name if false.
 	rollTwice = false,		// Always roll two dice.
 	useRollSetting = false, // Use 5E Shaped integrated roll setting. If both this and
 							// rollTwice are true, we will default to rollTwice.
-    
+	
 	// Config End
 	
 	checkInstall = function() {
-		commandOutput += `<div style=\"border: 1px solid black; background-color: #FFFFFF; padding: 3px 3px;\">`;
-		commandOutput += `<h3>Available commands:</h3>`;
-		for (var s in attrList) {
-			commandOutput += `[${s}](!group-check --${s})`;
-		}
-		commandOutput += `</div>`;
-		log('groupCheck v'+version+' is ready!');
 		if (rollTwice && useRollSetting) {
 			useRollSetting = false;
 			log('groupCheck: Both rollTwice and useRollSetting are set to true. Defaulting to roll2.');
 		}
+		log('groupCheck v'+version+' is ready!');
 	},
 	
 	printHelp = function(who) {
@@ -90,6 +83,23 @@ var groupCheck = groupCheck || (function() {
 		sendChat(who, output, null, {noarchive:true});
 	},
 
+	printCommandMenu = function(who, opts) {
+		// create options
+		var optsCommand,commandOutput;
+		optsCommand = '';
+		for (var s in opts) {
+			optsCommand += `--${s} `; 
+		}
+		commandOutput = `/w ${who} `;
+		commandOutput += `<div style=\"border: 1px solid black; background-color: #FFFFFF; padding: 3px 3px;\">`;
+		commandOutput += `<h3>Available commands:</h3>`;
+		for (var s in attrList) {
+			commandOutput += `[${s}](!group-check ${optsCommand}--${s})`;
+		}
+		commandOutput += `</div>`;
+		sendChat(who, commandOutput, null, {noarchive:true});
+		return;
+	},
 	
 	handleInput = function(msg) {
 		var args, opts, token, character, characterId, attr, attrMod, name, dieUsed, rollTwoOnce, RSAppendix;
@@ -119,7 +129,7 @@ var groupCheck = groupCheck || (function() {
 				}
 				
 				if (!attr) {
-                    sendChat(msg.who, `/w ${msg.who} ` + commandOutput, null, {noarchive:true});
+					printCommandMenu(msg.who,opts);
 					return;
 				}
 				
@@ -130,18 +140,18 @@ var groupCheck = groupCheck || (function() {
 				
 				output += `<div style=\"border: 1px solid black; background-color: #FFFFFF; padding: 3px 3px;\">`;
 				output += `<h3>${attr}:</h3>`;
-                output += `<br>`;
-                
-                dieUsed = die;
-                RSAppendix = ``;
-                if (opts.adv && !opts.roll2) {
-                    dieUsed = "2d20kh1";
-                    RSAppendix = ` (Advantage)`;
-                    
-                } else if (opts.disadv && !opts.roll2) {
-                    dieUsed = "2d20kl1";
-                    RSAppendix = ` (Disadvantage)`;
-                }
+				output += `<br>`;
+				
+				dieUsed = die;
+				RSAppendix = ``;
+				if (opts.adv && !opts.roll2) {
+					dieUsed = "2d20kh1";
+					RSAppendix = ` (Advantage)`;
+					
+				} else if (opts.disadv && !opts.roll2) {
+					dieUsed = "2d20kl1";
+					RSAppendix = ` (Disadvantage)`;
+				}
 				
 				var rollSetting = (useRollSetting || opts.rollsetting) && !opts.roll2 && !opts.disadv && !opts.adv;
 				var roll2 = opts.roll2 || (rollTwice && !opts.rollsetting && !opts.adv && !opts.disadv);
@@ -157,20 +167,20 @@ var groupCheck = groupCheck || (function() {
 								switch(getAttrByName(characterId,"roll_setting")) {
 									case `{{ignore=[[0` :
 										dieUsed = die;
-                                        RSAppendix = ``;
+										RSAppendix = ``;
 										break;
-                                    case `adv {{ignore=[[0`:
+									case `adv {{ignore=[[0`:
 										dieUsed = "2d20kh1";
-                                        RSAppendix = ` (Advantage)`;
+										RSAppendix = ` (Advantage)`;
 										break;
 									case `dis {{ignore=[[0` :
 										dieUsed = "2d20kl1";
-                                        RSAppendix = ` (Disadvantage)`;
-                                        break;
+										RSAppendix = ` (Disadvantage)`;
+										break;
 									default:
 										dieUsed = die;
-                                        RSAppendix = ``;
-                                        rollTwoOnce = true;
+										RSAppendix = ``;
+										rollTwoOnce = true;
 								} 
 							}
 							if (useTokenName) {
