@@ -1,6 +1,6 @@
 var groupCheck = groupCheck || (function() {
 	'use strict';
-	var version = '0.5.2',
+	var version = '0.5.3',
 	// Config Start
 	// Attribute list is for D&D 5E Shaped sheet
 	
@@ -8,10 +8,11 @@ var groupCheck = groupCheck || (function() {
 							// work around sendChat bug. E.g. 0d0 + 10.
 	whisperToGM = false,	// Whisper results to GM or make them public by default.
 	useTokenName = true,	// Uses name of the token if true, character name if false.
-	rollTwice = false,		// Always roll two dice.
+	alwaysRoll2 = false,	// Always roll two dice.
 	useRollSetting = false, // Use 5E Shaped integrated roll setting. If both this and
 							// rollTwice are true, we will default to rollTwice.
-		
+	hideBonus = false,		// Hide boni to rolls and only display the final result.
+
 	attrList = {
 		'Strength Save': ['strength_saving_throw_mod'],
 		'Dexterity Save': ['strength_saving_throw_mod'],
@@ -51,11 +52,11 @@ var groupCheck = groupCheck || (function() {
 	// Config End
 	
 	checkInstall = function() {
-		if (rollTwice && useRollSetting) {
+		if (alwaysRoll2 && useRollSetting) {
 			useRollSetting = false;
 			log('groupCheck: Both rollTwice and useRollSetting are set to true. Defaulting to roll2.');
 		}
-		log('groupCheck v'+version+' is ready!');
+		log('-=> groupCheck v'+version+' <=-');
 	},
 	
 	printHelp = function(who) {
@@ -101,7 +102,7 @@ var groupCheck = groupCheck || (function() {
 		return;
 	},
 	
-	addCharacterToOutput = function(id, rollSetting, roll2, dieUsed, attrMods, rollAppendix) {
+	addCharacterToOutput = function(id, rollSetting, roll2, dieUsed, attrMods, rollAppendix, rollPre, rollPost) {
 	
 		var token, character, characterId, roll2Once = false, name, totalMod = ``, output = ``;
 		
@@ -142,11 +143,11 @@ var groupCheck = groupCheck || (function() {
 				}
 		
 				if (roll2 || roll2Once) {
-					output += `<p><b>${name}:</b> [[${dieUsed} ${totalMod}]]`;
-					output += ` | [[${dieUsed} ${totalMod}]]</p>`;
+					output += `<p><b>${name}:</b> ${rollPre}${dieUsed} ${totalMod}${rollPost}`;
+					output += ` | ${rollPre}${dieUsed} ${totalMod}${rollPost}</p>`;
 					roll2Once = false;
 				} else {
-					output += `<p><b>${name}:</b> [[${dieUsed} ${totalMod}]]${rollAppendix}</p>`;
+					output += `<p><b>${name}:</b> ${rollPre}${dieUsed} ${totalMod}${rollPost}${rollAppendix}</p>`;
 				}
 			}
 		}
@@ -155,7 +156,8 @@ var groupCheck = groupCheck || (function() {
 	
 	handleInput = function(msg) {
 		var args, opts = {}, attr, attrMods, dieUsed = die, rollAppendix = ``, output = ``;
-	
+		var rollPre = '[[', rollPost = ']]';
+		
 		if (msg.type !== "api") {
 			return;
 		}
@@ -201,12 +203,17 @@ var groupCheck = groupCheck || (function() {
 					rollAppendix = " (Disadvantage)";
 				}
 				
+				if ((hideBonus && !opts.showbonus) || opts.hidebonus) {
+					rollPre= '[[[[';
+					rollPost= ']]]]';
+				}
+				
 				var rollSetting = (useRollSetting || opts.rollsetting) && !opts.roll2 && !opts.disadv && !opts.adv;
-				var roll2 = opts.roll2 || (rollTwice && !opts.rollsetting && !opts.adv && !opts.disadv);
+				var roll2 = opts.roll2 || (alwaysRoll2 && !opts.rollsetting && !opts.adv && !opts.disadv);
 				
 				if (msg.selected && msg.selected.length) {
 					for (var sel in msg.selected) {						   
-						output += addCharacterToOutput(msg.selected[sel]._id, rollSetting, roll2, dieUsed, attrMods, rollAppendix);
+						output += addCharacterToOutput(msg.selected[sel]._id, rollSetting, roll2, dieUsed, attrMods, rollAppendix, rollPre, rollPost);
 					}
 				}
 				
