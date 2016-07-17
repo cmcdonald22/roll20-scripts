@@ -39,47 +39,44 @@ var chatSetAttr = chatSetAttr || (function() {
 	},
 
 	handleInput = function(msg) {
-		var args, token, character, characterId, attr, output = '';
-	
 		if (msg.type !== "api") {
 			return;
 		}
+		var args, token, character, characterId, attr, output = '';
 
 		args = msg.content.split(/\s+/);
-		switch(args.shift()) {
-			case '!setattr':
-					
-				if (args.length != 2) {
-					handleError(msg.who,'The number of arguments was wrong.',args);
-					return;
-				}
+		if (args.shift() = '!setattr') {
+			if (args.length != 2) {
+				handleError(msg.who,'The number of arguments was wrong.', args);
+				return;
+			}
 
-				if (msg.selected && msg.selected.length) {
-					output += `/w ${msg.who}`;
-					output += "<div style=\"border: 1px solid black; background-color: #FFFFFF; padding: 3px 3px;\">";
-					output += `<p>Set ${args[0]} to ${args[1]} for characters `;
-					
-					for (var sel in msg.selected) {						   
-						token = getObj('graphic', msg.selected[sel]._id);
-						if (token) {
-							characterId = token.get("represents");
-							if (characterId) {
-								character = getObj("character", characterId);
-								attr = myGetAttrByName(character.id, args[0]);
-								attr.set("current", args[1]);
-								output += `${character.get("name")}`;
-								if (sel < msg.selected.length - 1) {
-									output += ", ";
-								}
+			if (msg.selected && msg.selected.length) {
+				output += `/w ${msg.who}`;
+				output += "<div style=\"border: 1px solid black; background-color: #FFFFFF; padding: 3px 3px;\">";
+				output += `<p>Set ${args[0]} to ${args[1]} for characters `;
+				
+				for (var sel in msg.selected) {						   
+					token = getObj('graphic', msg.selected[sel]._id);
+					if (token) {
+						characterId = token.get("represents");
+						if (characterId) {
+							character = getObj("character", characterId);
+							attr = myGetAttrByName(character.id, args[0]);
+							attr.set("current", args[1]);
+							output += `${character.get("name")}`;
+							if (sel < msg.selected.length - 1) {
+								output += ", ";
 							}
 						}
 					}
-					output += ".</p></div>";
-					if (feedback) {
-						sendChat(msg.who, output);
-					}
-					return;
 				}
+				output += ".</p></div>";
+				if (feedback) {
+					sendChat(msg.who, output);
+				}
+				return;
+			}
 		}
 		return;
 	},
