@@ -45,7 +45,7 @@ var chatSetAttr = chatSetAttr || (function() {
 		var args, token, character, characterId, attr, output = '';
 
 		args = msg.content.split(/\s+/);
-		if (args.shift() = '!setattr') {
+		if (args.shift() === '!setattr') {
 			if (args.length != 2) {
 				handleError(msg.who,'The number of arguments was wrong.', args);
 				return;
