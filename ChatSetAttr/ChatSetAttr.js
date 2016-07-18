@@ -1,3 +1,8 @@
+// Example Usage:	!setattr --Str : 14, AC:12, HP : 50
+// or				!setattr --charid @{John|character_id} --Wits: 15, Perception: 27
+//
+// Set feedback to false to disable output.
+
 var chatSetAttr = chatSetAttr || (function() {
     'use strict';
 	
@@ -125,7 +130,7 @@ var chatSetAttr = chatSetAttr || (function() {
 				
 				if (feedback) {
 					output += ".</p></div>";
-					sendChat(msg.who, output, null, {noarchive:true});
+					sendChat(msg.who, output);
 				}
 			}
 		}
