@@ -1,7 +1,7 @@
 var chatSetAttr = chatSetAttr || (function() {
-	'use strict';
+    'use strict';
 	
-	var version = '0.2.0',
+	var version = '0.2.1',
 	feedback = true,
 	
 	checkInstall = function() {
@@ -38,65 +38,95 @@ var chatSetAttr = chatSetAttr || (function() {
 		return attribute;
 	},
 
+	setAttributes = function(character_id, setting) {
+		for (var k in setting) {
+			 myGetAttrByName(character_id, k).set("current", setting[k]);
+		}
+		return;
+	},
+		
 	handleInput = function(msg) {
 		if (msg.type !== "api") {
 			return;
 		}
-		var args, attr, cmd, character, characterId, output = '', setting={}, settingNames='', settingValues='', token;
+		var args, attr, cmd, character, characterId, opts={}, output = '', setting={}, settingNames='', settingValues='', token;
 
-		cmd = msg.content.split(/\s(.+)/);
+		cmd = msg.content.split(/\s+--/);
 		if (cmd.shift() === '!setattr') {
+			
+			// Some options should be provided.
 			if (!cmd[0]) {
 				handleError(msg.who, "No options supplied.", {});
 				return;
 			}
 			
-			args = cmd[0].split(/\s*,\s*/);		
+			// Getting options
+			for (var k in cmd) {
+				if (k < cmd.length -1) {
+					var kv = cmd[k].split(/\s+/);
+					if (kv[1]) {
+						opts[kv[0]] = kv[1];
+					} else {
+						opts[kv[0]] = true;
+					}
+				}		
+			}	
+			
+			// Getting all the attributes we have to set
+			args = cmd[cmd.length - 1].split(/\s*,\s*/);		
 			for (var k in args) {
-				attr = args[k].split(/\s*=\s*/);
+				attr = args[k].split(/\s*:\s*/);
 				if (!attr || attr.length != 2) {
 					handleError(msg.who, "There was a problem with the input.", cmd[0]);
 					return;
 				}
 				setting[attr[0]] = attr[1];
-				if (k < args.length - 1) {
-					settingNames += `${attr[0]}, `;
-					settingValues += `${attr[1]}, `;
-				}
-				else {
-					settingNames += `${attr[0]}`;
-					settingValues += `${attr[1]}`;
+				if (feedback) {
+					if (k < args.length - 1) {
+						settingNames += `${attr[0]}, `;
+						settingValues += `${attr[1]}, `;
+					}
+					else {
+						settingNames += `${attr[0]}`;
+						settingValues += `${attr[1]}`;
+					}
 				}
 			}
 
 			
-			if (msg.selected && msg.selected.length) {
-				output += `/w ${msg.who}`;
-				output += "<div style=\"border: 1px solid black; background-color: #FFFFFF; padding: 3px 3px;\">";
-				output += `<p>Set ${settingNames} to ${settingValues} for characters `;
-				
-				for (var sel in msg.selected) {						   
-					token = getObj('graphic', msg.selected[sel]._id);
-					if (token) {
-						characterId = token.get("represents");
-						if (characterId) {
-							character = getObj("character", characterId);
-							for (var k in setting) {
-								attr = myGetAttrByName(character.id, k);
-								attr.set("current", setting[k]);
-							}
-							output += `${character.get("name")}`;
-							if (sel < msg.selected.length - 1) {
-								output += ", ";
+			if (opts.charid || (msg.selected && msg.selected.length)) {
+				if (feedback) {
+					output += `/w ${msg.who}`;
+					output += "<div style=\"border: 1px solid black; background-color: #FFFFFF; padding: 3px 3px;\">";
+					output += `<p>Set ${settingNames} to ${settingValues} for characters `;
+				}
+			
+				if (opts.charid) {
+					setAttributes(opts.charid, setting);
+					output += getAttrByName(opts.charid, "character_name");
+				} else {
+					for (var sel in msg.selected) {						   
+						token = getObj('graphic', msg.selected[sel]._id);
+						if (token) {
+							characterId = token.get("represents");
+							if (characterId) {
+								setAttributes(characterId, setting);
+								if (feedback) {
+									if (sel < msg.selected.length - 1) {
+										output += getAttrByName(characterId, "character_name") + ", ";
+									} else {
+										output += getAttrByName(characterId, "character_name");
+									}
+								}
 							}
 						}
 					}
 				}
-				output += ".</p></div>";
+				
 				if (feedback) {
+					output += ".</p></div>";
 					sendChat(msg.who, output, null, {noarchive:true});
 				}
-				return;
 			}
 		}
 		return;
