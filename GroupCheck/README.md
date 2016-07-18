@@ -55,6 +55,6 @@ There are two ways of customising the way the script runs: through static config
 
 * You can supply a fallback value. When the option **--fallback [value]** is given, a roll will be made even for tokens not linked to a character; for these tokens, **[value]** is used instead of a character's attribute as modifier to the roll. **[value]** may be any expression that the roll20 dice roller can interpret, such as a number, a die roll, a specific character's attribute, or a sum of these things. If also using **--globalmod**, the global modifier is applied in addition to the fallback mod.
 
-* (Advanced) It is possible to supply a custom roll not present in **attrList**. The syntax to do this is **--custom CheckName, mod\_1, ..., mod\_n**. This will roll a check with title **CheckName** and modifiers **mod\_1**, **mod\_2**, and so on. This works exactly as if there was an extra line in **attrList** as follows.
+* It is possible to supply a custom roll not present in **attrList**. The syntax to do this is **--custom CheckName, mod\_1, ..., mod\_n**. This will roll a check with title **CheckName** and modifiers **mod\_1**, **mod\_2**, and so on. This works exactly as if there was an extra line in **attrList** as follows.
 
 		'CheckName' : ['mod_1', 'mod_2', ... 'mod_n'],
