@@ -1,26 +1,26 @@
 // Example Usage:	!setattr --Str : 14, AC:12, HP : 50
 // or				!setattr --charid @{John|character_id} --Wits: 15, Perception: 27
 //
-// Set feedback to false to disable output.
+// Set feedback to false to disable output (except for error messages).
 
 var chatSetAttr = chatSetAttr || (function() {
     'use strict';
 	
-	var version = '0.2.1',
+	var version = '0.3',
 	feedback = true,
 	
 	checkInstall = function() {
 		log(` -=> ChatSetAttr v${version} <=-`);
 	},
 
-	handleError = function(who, errorMsg, args) {
+	handleError = function(who, errorMsg, cmd) {
 		var output = "/w " + who;
 		output += "<div style=\"border: 1px solid black; background-color: #FFBABA; padding: 3px 3px;\">";
 		output += "<h4>Error</h4>";
 		output += "<p>"+errorMsg+"</p>";
-		output += "Input was: <p>" + JSON.stringify(args) + "</p>";
+		output += "Input was: <p>" + cmd + "</p>";
 		output += "</div>";
-		sendChat(who, output, null, {noarchive:true});
+		sendChat(who, output);
 	},
 
 	myGetAttrByName = function(character_id, attribute_name,attribute_default_current, attribute_default_max) {
@@ -61,7 +61,7 @@ var chatSetAttr = chatSetAttr || (function() {
 			
 			// Some options should be provided.
 			if (!cmd[0]) {
-				handleError(msg.who, "No options supplied.", {});
+				handleError(msg.who, "No options supplied.", msg.content);
 				return;
 			}
 			
@@ -82,7 +82,7 @@ var chatSetAttr = chatSetAttr || (function() {
 			for (var k in args) {
 				attr = args[k].split(/\s*:\s*/);
 				if (!attr || attr.length != 2) {
-					handleError(msg.who, "There was a problem with the input.", cmd[0]);
+					handleError(msg.who, "There was a problem with the input.", msg.content);
 					return;
 				}
 				setting[attr[0]] = attr[1];
@@ -107,8 +107,26 @@ var chatSetAttr = chatSetAttr || (function() {
 				}
 			
 				if (opts.charid) {
-					setAttributes(opts.charid, setting);
-					output += getAttrByName(opts.charid, "character_name");
+					var allowed = playerIsGM(msg.playerid);
+					var character = getObj("character",opts.charid);
+					if (!character) {
+						handleError(msg.who, "A character with this id does not exist.", msg.content);
+						return;
+					}
+					if (!allowed) {
+						var contr = character.get("controlledby").split(/\s*,\s*/);
+						for (var k in contr) {
+							if (contr[k] === msg.playerid || contr[k] === 'all') allowed = true;
+						}
+					}
+					if (allowed) {
+						setAttributes(opts.charid, setting);
+						output += character.get("name");
+					}
+					else {
+						handleError(msg.who, "You do not have permission.", msg.content);
+						return;
+					}
 				} else {
 					for (var sel in msg.selected) {						   
 						token = getObj('graphic', msg.selected[sel]._id);
@@ -132,6 +150,9 @@ var chatSetAttr = chatSetAttr || (function() {
 					output += ".</p></div>";
 					sendChat(msg.who, output);
 				}
+			}
+			else {
+				handleError(msg.who,"No tokens selected", msg.content);
 			}
 		}
 		return;
