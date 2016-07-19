@@ -1,6 +1,6 @@
 var groupCheck = groupCheck || (function() {
     'use strict';
-    var version = '0.6',
+    var version = '0.6.1',
 	// Config Start
 	// Attribute list is for D&D 5E Shaped sheet
 	
@@ -152,7 +152,7 @@ var groupCheck = groupCheck || (function() {
 				if (token.get("name") !== '') {
 					name = token.get("name");
 				} else {
-					name = "Default";
+					name = `<img src='${token.get("imgsrc")}' height="35" width="35">`;
 				}
 				if (globalMod) {
 					fallback += ` + ${globalMod}[global modifier]`;
