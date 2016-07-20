@@ -124,6 +124,20 @@ var chatSetAttr = chatSetAttr || (function() {
 			// Get characters, either from charid or from selected tokens
 			if (opts.charid) {
 				charIDList = opts.charid.split(/\s*,\s*/);
+				let control, character;
+				for (var k in charIDList) {
+					character = getObj("character",charIDList[k]);
+					if (character) {
+						control = character.get('controlledby').split(/,/);
+						if(!(playerIsGM(msg.playerid) || _.contains(control,'all') || _.contains(control,msg.playerid))) {
+							charIDList.splice(k,1);
+							handleError(msg.who, "Permission error.", msg.content);
+						}
+					} else {
+						charIDList.splice(k,1);
+						handleError(msg.who, "Invalid character id.", msg.content);
+					}	
+				}
 			} else if (msg.selected && msg.selected.length) {
 				let characterId, token;
 				for (var sel in msg.selected) {						   
@@ -138,24 +152,6 @@ var chatSetAttr = chatSetAttr || (function() {
 			} else {
 				handleError(msg.who,"No tokens selected.", msg.content);
 				return;
-			}
-
-			// Need to check permissions and existence of characters if charid is supplied.
-			if (opts.charid) {
-				let control, character;
-				for (var k in charIDList) {
-					character = getObj("character",charIDList[k]);
-					if (character) {
-						control = character.get('controlledby').split(/,/);
-						if(!(_.contains(control,'all') || _.contains(control,msg.playerid))) { //playerIsGM(msg.playerid) || 
-							charIDList.splice(k,1);
-							handleError(msg.who, "Permission error.", msg.content);
-						}
-					} else {
-						charIDList.splice(k,1);
-						handleError(msg.who, "Invalid character id.", msg.content);
-					}	
-				}
 			}			
 			
 			// Set attributes
