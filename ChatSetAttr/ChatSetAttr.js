@@ -68,6 +68,7 @@ var chatSetAttr = chatSetAttr || (function() {
 		// Output:	null. Attribute values are changed.
 		list.forEach(function(c) {
 			_.each(setting, function(s,t) {
+				s = s || '';
 				myGetAttrByName(c,t).set("current",s);
 			});
 		});
