@@ -1,12 +1,7 @@
-// Example Usage:	!setattr --Str | 14, AC|12, HP | 50 --Juice |12
-// or				!setattr --charid @{John|character_id}, @{Mark|character_id} --Wits| 15, Perception|27
-//
-// Set feedback to false to disable output (except for error messages).
-
 var chatSetAttr = chatSetAttr || (function() {
     'use strict';
 
-	const version = '0.5',
+	const version = '0.6',
 	feedback = true,
 
 	checkInstall = function() {
@@ -66,16 +61,18 @@ var chatSetAttr = chatSetAttr || (function() {
 		// Input:	list - array of valid character IDs
 		//			setting - object containing attribute names and desired values
 		// Output:	null. Attribute values are changed.
+		let attr;
 		list.forEach(function(c) {
 			_.each(setting, function(s,t) {
-				s = s || '';
-				myGetAttrByName(c,t).set("current",s);
+				attr = myGetAttrByName(c,t);
+				if (s.current !== undefined) attr.set('current',s.current);
+				if (s.max !== undefined) attr.set('max',s.max);
 			});
 		});
 		return;
 	},
 
-	processOpts = function(content, hasValue) {
+	parseOpts = function(content, hasValue) {
 		// Input:	content - string of the form command --opts1 --opts2  value --opts3.
 		//					values come separated by whitespace.
 		//			hasValue - array of all options which come with a value
@@ -105,26 +102,106 @@ var chatSetAttr = chatSetAttr || (function() {
 		.map(str => str.split(/\s*,\s*/))
 		.flatten()
 		.map(str => str.split(/\s*\|\s*/))
+		.reject(a => a.length === 0)
+		.map(sanitizeAttributeArray)
 		.object()
 		.value();
 	},
 
+	sanitizeAttributeArray = function (arr) {
+		if (arr.length === 1)
+			return [arr[0],{current : ''}];
+		if (arr.length === 2)
+			return [arr[0],{current : arr[1].replace(/'/g,'')}];
+		if (arr.length === 3 && arr[1] === '')
+			return [arr[0], {max : arr[2].replace(/'/g,'')}];
+		if (arr.length === 3 && arr[1] === "''")
+			return [arr[0], {current : '', max : arr[2].replace(/'/g,'')}];
+		else if (arr.length === 3)
+			return [arr[0], {current : arr[1].replace(/'/g,''), max : arr[2].replace(/'/g,'')}];
+		if (arr.length > 4) return sanitizeAttributeArray(_.first(arr,3));
+	},
+
+	checkPermissions = function (list, playerid, who) {
+		let control, character;
+		for (let k in list) {
+			character = getObj("character",list[k]);
+			if (character) {
+				control = character.get('controlledby').split(/,/);
+				if(!(playerIsGM(playerid) || _.contains(control,'all') || _.contains(control,playerid))) {
+					list.splice(k,1);
+					handleError(who, "Permission error.", "Name: " + character.get('name'));
+				}
+			}
+			else {
+				handleError(who, "Invalid character id.", "Id: " + list[k]);
+				list.splice(k,1);
+			}
+		}
+		return list;
+	},
+
+	getIDsFromTokens = function (selected) {
+		let charIDList = [], characterId, token;
+		selected.forEach(function(a) {
+			token = getObj('graphic', a._id);
+			if (token) {
+				characterId = token.get("represents");
+				if (characterId) {
+					charIDList.push(characterId);
+				}
+			}
+		});
+		return charIDList;
+	},
+
+	getIDsFromNames = function(charNames, playerid, who) {
+		let charIDList = _.chain(charNames.split(/\s*,\s*/))
+			.map(function (n) {
+				let character = findObjs({type: 'character', name: n}, {caseInsensitive: true})[0];
+				if (character) return character.id;
+				else return '';})
+			.compact()
+			.value();
+		return checkPermissions(charIDList, playerid, who);
+	},
+
+	getIDsFromList = function(charid, playerid, who) {
+		return checkPermissions(charid.split(/\s*,\s*/), playerid, who);
+	},
+
+	sendFeedback = function (who, list, setting) {
+		let charNames = list.map(id => getAttrByName(id, "character_name")).join(", ");
+		let values = _.chain(setting).values()
+			.map(function (o) {
+				if (o.max !== undefined && o.current !== undefined)	return `${o.current} / ${o.max}`;
+				if (o.max === undefined) return o.current;
+				if (o.current === undefined) return `${o.max} (max)`;
+				return '';})
+			.value()
+			.join(", ");
+		let output = `/w ${who}` +
+			`<div style="border: 1px solid black; background-color: #FFFFFF; padding: 3px 3px;">` +
+			`<p>Setting ${_.keys(setting).join(", ")} to ${values} ` +
+			`for characters ${charNames}.</p></div>`;
+		sendChat(who, output);
+	},
+
 	handleInput = function(msg) {
-		let charIDList;
-		const hasValue = ['charid'], optsArray = ['all','allgm','charid','silent'];
-
 		if (msg.type === "api" && msg.content.match(/^!setattr\b/)) {
-
-			// Parse input
-			const opts = processOpts(processInlinerolls(msg), hasValue);
-			const setting = parseAttributes(_.chain(opts).omit(optsArray).keys().value());
+			// Parsing
+			let charIDList;
+			const hasValue = ['charid','name'],
+				optsArray = ['all','allgm','charid','name','silent','sel'],
+				opts = parseOpts(processInlinerolls(msg), hasValue),
+				setting = parseAttributes(_.chain(opts).omit(optsArray).keys().value());
 
 			if (_.isEmpty(setting)) {
-				handleError(msg.who, "No options supplied.", msg.content);
+				handleError(msg.who, "No attributes supplied.", msg.content);
 				return;
 			}
 
-			// Get characters, either from charid or from selected tokens
+			// Get list of character IDs
 			if (opts.all && playerIsGM(msg.playerid)) {
 				charIDList = _.map(findObjs({_type: 'character'}), c => c.id);
 			}
@@ -135,52 +212,25 @@ var chatSetAttr = chatSetAttr || (function() {
 							.value();
 			}
 			else if (opts.charid) {
-				charIDList = opts.charid.split(/\s*,\s*/);
-				let control, character;
-				for (let k in charIDList) {
-					character = getObj("character",charIDList[k]);
-					if (character) {
-						control = character.get('controlledby').split(/,/);
-						if(!(playerIsGM(msg.playerid) || _.contains(control,'all') || _.contains(control,msg.playerid))) {
-							charIDList.splice(k,1);
-							handleError(msg.who, "Permission error.", msg.content);
-						}
-					}
-					else {
-						charIDList.splice(k,1);
-						handleError(msg.who, "Invalid character id.", msg.content);
-					}
-				}
+				charIDList = getIDsFromList(opts.charid, msg.playerid, msg.who);
 			}
-			else if (msg.selected && msg.selected.length) {
-				charIDList = [];
-				let characterId, token;
-				for (let sel in msg.selected) {
-					token = getObj('graphic', msg.selected[sel]._id);
-					if (token) {
-						characterId = token.get("represents");
-						if (characterId) {
-							charIDList.push(characterId);
-						}
-					}
-				}
+			else if (opts.name) {
+				charIDList = getIDsFromNames(opts.name, msg.playerid, msg.who);
+			}
+			else if (opts.sel && msg.selected) {
+				charIDList = getIDsFromTokens(msg.selected);
 			}
 			else {
-				handleError(msg.who,"No tokens selected.", msg.content);
+				handleError(msg.who,"Don't know what to do.", msg.content);
 				return;
 			}
 
 			// Set attributes
-			setAttributes(charIDList,setting);
+			setAttributes(charIDList, setting);
 
 			// Output
-			if (feedback && !opts.silent) {
-				let charNames = charIDList.map(id => getAttrByName(id, "character_name")).join(", ");
-				let output = `/w ${msg.who}` +
-					`<div style="border: 1px solid black; background-color: #FFFFFF; padding: 3px 3px;">` +
-					`<p>Setting ${_.keys(setting).join(", ")} to ${_.values(setting).join(", ")} ` +
-					`for characters ${charNames}.</p></div>`;
-				sendChat(msg.who, output);
+			if (feedback && !opts.silent && !_.isEmpty(charIDList)) {
+				sendFeedback(msg.who, charIDList, setting);
 			}
 		}
 		return;
