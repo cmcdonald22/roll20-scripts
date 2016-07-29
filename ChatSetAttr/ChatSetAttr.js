@@ -119,7 +119,7 @@ var chatSetAttr = chatSetAttr || (function() {
 			return [arr[0], {current : '', max : arr[2].replace(/'/g,'')}];
 		else if (arr.length === 3)
 			return [arr[0], {current : arr[1].replace(/'/g,''), max : arr[2].replace(/'/g,'')}];
-		if (arr.length > 4) return sanitizeAttributeArray(_.first(arr,3));
+		if (arr.length > 3) return sanitizeAttributeArray(_.first(arr,3));
 	},
 
 	checkPermissions = function (list, playerid, who) {
