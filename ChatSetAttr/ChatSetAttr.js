@@ -1,7 +1,7 @@
 var chatSetAttr = chatSetAttr || (function() {
     'use strict';
 
-	const version = '0.7',
+	const version = '0.7.1',
 	feedback = true,
 
 	checkInstall = function() {
@@ -10,7 +10,7 @@ var chatSetAttr = chatSetAttr || (function() {
 
 	handleError = function(who, errorMsg, cmd) {
 		let output = "/w " + who
-			+ "<div style=\"border: 1px solid black; background-color: #FFBABA; padding: 3px 3px;\">"
+			+ " <div style=\"border: 1px solid black; background-color: #FFBABA; padding: 3px 3px;\">"
 			+ "<h4>Error</h4>"
 			+ "<p>"+errorMsg+"</p>"
 			+ "Input was: <p>" + cmd + "</p>"
@@ -65,48 +65,52 @@ var chatSetAttr = chatSetAttr || (function() {
 		list.forEach(function(c) {
 			_.each(setting, function(s,t) {
 				if (t.match(/^repeating_/)) {
-					handleRepeatingSections(c,t,s);
+					attr = getRepeatingAttribute(c,t);
 				} else {
 					attr = myGetAttrByName(c,t);
+				}
+				if (attr) {
 					if (s.current !== undefined) attr.set('current',s.current);
 					if (s.max !== undefined) attr.set('max',s.max);
+				} else {
+					handleError('GM','Repeating attribute '+t+' invalid for character '+getAttrByName(c,'character_name'),'');
 				}
 			});
 		});
 		return;
 	},
 
-	regExpEscape = function(string) {
-  		return string.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&')
-	},
-
-	handleRepeatingSections = function(charId, attrName, s) {
-		let attrMatch = attrName.match(/_\$\d+_/), attr;
+	getRepeatingAttribute = function(charId, attrName) {
+		let attrMatch = attrName.match(/_\$\d+?_/), attr, attrNameSplit, repSectionIds;
 		if (attrMatch) {
-			let rowNum = parseInt(attrMatch[0].replace('$','').replace('_',''));
-			let repeatingRegExp = _.chain(attrName.split(attrMatch[0]))
-						.first(2)
-						.map(regExpEscape)
-						.map( (str,ind) => {
-							if (ind === 0) return ('^' + str + '_-\\w+');
-							if (ind === 1) return ('_' + str + '$');})
-						.value()
-						.join('');
-			attr = _.filter(findObjs({type: 'attribute', characterid: charId}, {caseInsensitive: true}), function (a) {
-				if (a.get("name").match(repeatingRegExp)) return true;
-				else return false;})[rowNum];
-			if (attr) {
-				if (s.current !== undefined) attr.set('current',s.current);
-				if (s.max !== undefined) attr.set('max',s.max);
+			let rowNum = parseInt(attrMatch[0].replace('$','').replace(/_/g,''));
+			attrNameSplit = attrName.split(attrMatch[0]);
+			repSectionIds = _.chain(findObjs({type: 'attribute', characterid: charId}, {caseInsensitive: true}))
+				.map(a => a.get("name").match('^' + attrNameSplit[0] + '_(-[-A-Za-z0-9]+?)_'))
+				.compact()
+				.map(a => a[1])
+				.uniq()
+				.value();
+			if (!_.isUndefined(repSectionIds[rowNum])) {
+ 				attr = myGetAttrByName(charId, attrNameSplit[0] + '_' + repSectionIds[rowNum] + '_' + attrNameSplit[1]);
 			}
 		} else {
-			attr = findObjs({type: 'attribute',	characterid: charId, name: attrName}, {caseInsensitive: true})[0];
-			if (attr) {
-				if (s.current !== undefined) attr.set('current',s.current);
-				if (s.max !== undefined) attr.set('max',s.max);
+			let idMatch = attrName.match(/_(-[-A-Za-z0-9]+?)_/)[0];
+			if (idMatch) {
+				let id = idMatch.replace(/_/g,'');
+				attrNameSplit = attrName.split(idMatch);
+				repSectionIds = _.chain(findObjs({type: 'attribute', characterid: charId}, {caseInsensitive: true}))
+					.map(a => a.get("name").match('^' + attrNameSplit[0] + '_(-[-A-Za-z0-9]+?)_'))
+					.compact()
+					.map(a => a[1])
+					.uniq()
+					.value();
+				if (_.contains(repSectionIds, id) ){
+ 					attr = myGetAttrByName(charId, attrNameSplit[0] + '_' + id + '_' + attrNameSplit[1]);
+				}
 			}
 		}
-		return;
+		return attr;
 	},
 
 	parseOpts = function(content, hasValue) {
