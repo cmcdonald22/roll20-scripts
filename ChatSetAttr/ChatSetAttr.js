@@ -1,7 +1,7 @@
 var chatSetAttr = chatSetAttr || (function() {
     'use strict';
 
-	const version = '0.6',
+	const version = '0.7',
 	feedback = true,
 
 	checkInstall = function() {
@@ -64,11 +64,48 @@ var chatSetAttr = chatSetAttr || (function() {
 		let attr;
 		list.forEach(function(c) {
 			_.each(setting, function(s,t) {
-				attr = myGetAttrByName(c,t);
-				if (s.current !== undefined) attr.set('current',s.current);
-				if (s.max !== undefined) attr.set('max',s.max);
+				if (t.match(/^repeating_/)) {
+					handleRepeatingSections(c,t,s);
+				} else {
+					attr = myGetAttrByName(c,t);
+					if (s.current !== undefined) attr.set('current',s.current);
+					if (s.max !== undefined) attr.set('max',s.max);
+				}
 			});
 		});
+		return;
+	},
+
+	regExpEscape = function(string) {
+  		return string.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&')
+	},
+
+	handleRepeatingSections = function(charId, attrName, s) {
+		let attrMatch = attrName.match(/_\$\d+_/), attr;
+		if (attrMatch) {
+			let rowNum = parseInt(attrMatch[0].replace('$','').replace('_',''));
+			let repeatingRegExp = _.chain(attrName.split(attrMatch[0]))
+						.first(2)
+						.map(regExpEscape)
+						.map( (str,ind) => {
+							if (ind === 0) return ('^' + str + '_-\\w+');
+							if (ind === 1) return ('_' + str + '$');})
+						.value()
+						.join('');
+			attr = _.filter(findObjs({type: 'attribute', characterid: charId}, {caseInsensitive: true}), function (a) {
+				if (a.get("name").match(repeatingRegExp)) return true;
+				else return false;})[rowNum];
+			if (attr) {
+				if (s.current !== undefined) attr.set('current',s.current);
+				if (s.max !== undefined) attr.set('max',s.max);
+			}
+		} else {
+			attr = findObjs({type: 'attribute',	characterid: charId, name: attrName}, {caseInsensitive: true})[0];
+			if (attr) {
+				if (s.current !== undefined) attr.set('current',s.current);
+				if (s.max !== undefined) attr.set('max',s.max);
+			}
+		}
 		return;
 	},
 
@@ -84,8 +121,7 @@ var chatSetAttr = chatSetAttr || (function() {
 			kv = args[k].split(/\s(.+)/);
 			if (_.contains(hasValue, kv[0])) {
 				opts[kv[0]] = kv[1];
-			}
-			else {
+			} else {
 				opts[args[k]] = true;
 			}
 		}
@@ -132,8 +168,7 @@ var chatSetAttr = chatSetAttr || (function() {
 					list.splice(k,1);
 					handleError(who, "Permission error.", "Name: " + character.get('name'));
 				}
-			}
-			else {
+			} else {
 				handleError(who, "Invalid character id.", "Id: " + list[k]);
 				list.splice(k,1);
 			}
@@ -204,23 +239,18 @@ var chatSetAttr = chatSetAttr || (function() {
 			// Get list of character IDs
 			if (opts.all && playerIsGM(msg.playerid)) {
 				charIDList = _.map(findObjs({_type: 'character'}), c => c.id);
-			}
-			else if (opts.allgm && playerIsGM(msg.playerid)) {
+			} else if (opts.allgm && playerIsGM(msg.playerid)) {
 				charIDList = _.chain(findObjs({_type: 'character'}))
 							.filter(c => c.get('controlledby') === '')
 							.map(c => c.id)
 							.value();
-			}
-			else if (opts.charid) {
+			} else if (opts.charid) {
 				charIDList = getIDsFromList(opts.charid, msg.playerid, msg.who);
-			}
-			else if (opts.name) {
+			} else if (opts.name) {
 				charIDList = getIDsFromNames(opts.name, msg.playerid, msg.who);
-			}
-			else if (opts.sel && msg.selected) {
+			} else if (opts.sel && msg.selected) {
 				charIDList = getIDsFromTokens(msg.selected);
-			}
-			else {
+			} else {
 				handleError(msg.who,"Don't know what to do.", msg.content);
 				return;
 			}
