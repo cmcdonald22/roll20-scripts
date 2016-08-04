@@ -136,7 +136,7 @@ var chatSetAttr = chatSetAttr || (function() {
 		if (replace) {
 			args = _.mapObject(args, function(obj) {
 				return _.mapObject(obj,	function (str) {
-					return str.replace(/</g,'[').replace(/>/g,']').replace(/#/g,'|').replace(/\$/g,'@');
+					return str.replace(/</g,'[').replace(/>/g,']').replace(/#/g,'|').replace(/\~/g,'@');
 				});
 			});
 		}
@@ -209,7 +209,7 @@ var chatSetAttr = chatSetAttr || (function() {
 		let values = _.chain(setting).values()
 			.map(function (o) {
 				return _.mapObject(o,function (str) {
-					if (replace) return str.replace(/\[/g,'<').replace(/\]/g,'>').replace(/\|/g,'#').replace(/@/g,'$');
+					if (replace) return str.replace(/\[/g,'<').replace(/\]/g,'>').replace(/\|/g,'#').replace(/@/g,'~');
 					else return str;
 				});})
 			.map(function (o) {
@@ -223,7 +223,7 @@ var chatSetAttr = chatSetAttr || (function() {
 			`<div style="border: 1px solid black; background-color: #FFFFFF; padding: 3px 3px;">` +
 			`<p>Setting ${_.keys(setting).join(", ")} to ${values} ` +
 			`for characters ${charNames}`;
-		if (replace) output += ' (replacing <,>,#,$ by [,],|,@)';
+		if (replace) output += ' (replacing <,>,#,~ by [,],|,@)';
 		output += '.</p></div>'
 		sendChat(who, output);
 	},
