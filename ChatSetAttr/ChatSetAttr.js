@@ -1,7 +1,7 @@
 var chatSetAttr = chatSetAttr || (function() {
     'use strict';
 
-	const version = '0.7.1',
+	const version = '0.7.2',
 	feedback = true,
 
 	checkInstall = function() {
@@ -18,25 +18,13 @@ var chatSetAttr = chatSetAttr || (function() {
 		sendChat(who, output);
 	},
 
-	myGetAttrByName = function(character_id, attribute_name, attribute_default_current, attribute_default_max) {
+	myGetAttrByName = function(charId, attrName) {
 		// Returns attribute object by name
-		attribute_default_current = attribute_default_current || '';
-		attribute_default_max = attribute_default_max || '';
-
-		let attribute = findObjs({
-			type: 'attribute',
-			characterid: character_id,
-			name: attribute_name
-		}, {caseInsensitive: true})[0];
-		if (!attribute) {
-			attribute = createObj('attribute', {
-				characterid: character_id,
-				name: attribute_name,
-				current: attribute_default_current,
-				max: attribute_default_max
-			});
+		let attr = findObjs({type: 'attribute', characterid: charId, name: attrName}, {caseInsensitive: true})[0];
+		if (!attr) {
+			attr = createObj('attribute', {characterid: charId,	name: attrName});
 		}
-		return attribute;
+		return attr;
 	},
 
 	processInlinerolls = function (msg) {
@@ -132,13 +120,12 @@ var chatSetAttr = chatSetAttr || (function() {
 		return opts;
 	},
 
-	parseAttributes = function(args) {
+	parseAttributes = function(args, replace) {
 		// Input:	args - array containing comma-separated list of strings, every one of which contains
-		// 			an expression of the form key|value
+		// 			an expression of the form key|value or key|value|maxvalue
 		// Output:	Object containing key|value for all expressions.
-		//
-		// It can deal with empty values
-		return _.chain(args)
+
+		args = _.chain(args)
 		.map(str => str.split(/\s*,\s*/))
 		.flatten()
 		.map(str => str.split(/\s*\|\s*/))
@@ -146,6 +133,14 @@ var chatSetAttr = chatSetAttr || (function() {
 		.map(sanitizeAttributeArray)
 		.object()
 		.value();
+		if (replace) {
+			args = _.mapObject(args, function(obj) {
+				return _.mapObject(obj,	function (str) {
+					return str.replace(/</g,'[').replace(/>/g,']').replace(/#/g,'|').replace(/\$/g,'@');
+				});
+			});
+		}
+		return args;
 	},
 
 	sanitizeAttributeArray = function (arr) {
@@ -209,9 +204,14 @@ var chatSetAttr = chatSetAttr || (function() {
 		return checkPermissions(charid.split(/\s*,\s*/), playerid, who);
 	},
 
-	sendFeedback = function (who, list, setting) {
+	sendFeedback = function (who, list, setting, replace) {
 		let charNames = list.map(id => getAttrByName(id, "character_name")).join(", ");
 		let values = _.chain(setting).values()
+			.map(function (o) {
+				return _.mapObject(o,function (str) {
+					if (replace) return str.replace(/\[/g,'<').replace(/\]/g,'>').replace(/\|/g,'#').replace(/@/g,'$');
+					else return str;
+				});})
 			.map(function (o) {
 				if (o.max !== undefined && o.current !== undefined)	return `${o.current} / ${o.max}`;
 				if (o.max === undefined) return o.current;
@@ -222,7 +222,9 @@ var chatSetAttr = chatSetAttr || (function() {
 		let output = `/w ${who}` +
 			`<div style="border: 1px solid black; background-color: #FFFFFF; padding: 3px 3px;">` +
 			`<p>Setting ${_.keys(setting).join(", ")} to ${values} ` +
-			`for characters ${charNames}.</p></div>`;
+			`for characters ${charNames}`;
+		if (replace) output += ' (replacing <,>,#,$ by [,],|,@)';
+		output += '.</p></div>'
 		sendChat(who, output);
 	},
 
@@ -231,9 +233,9 @@ var chatSetAttr = chatSetAttr || (function() {
 			// Parsing
 			let charIDList;
 			const hasValue = ['charid','name'],
-				optsArray = ['all','allgm','charid','name','silent','sel'],
+				optsArray = ['all','allgm','charid','name','silent','sel','replace'],
 				opts = parseOpts(processInlinerolls(msg), hasValue),
-				setting = parseAttributes(_.chain(opts).omit(optsArray).keys().value());
+				setting = parseAttributes(_.chain(opts).omit(optsArray).keys().value(),opts.replace);
 
 			if (_.isEmpty(setting)) {
 				handleError(msg.who, "No attributes supplied.", msg.content);
@@ -264,7 +266,7 @@ var chatSetAttr = chatSetAttr || (function() {
 
 			// Output
 			if (feedback && !opts.silent && !_.isEmpty(charIDList)) {
-				sendFeedback(msg.who, charIDList, setting);
+				sendFeedback(msg.who, charIDList, setting, opts.replace);
 			}
 		}
 		return;
