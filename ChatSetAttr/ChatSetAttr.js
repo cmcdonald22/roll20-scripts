@@ -1,27 +1,26 @@
 var chatSetAttr = chatSetAttr || (function() {
     'use strict';
 
-	const version = '0.7.2',
+	const version = '0.8',
 	feedback = true,
 
 	checkInstall = function() {
 		log(`-=> ChatSetAttr v${version} <=-`);
 	},
 
-	handleError = function(who, errorMsg, cmd) {
+	handleError = function(who, errorMsg) {
 		let output = "/w " + who
 			+ " <div style=\"border: 1px solid black; background-color: #FFBABA; padding: 3px 3px;\">"
 			+ "<h4>Error</h4>"
 			+ "<p>"+errorMsg+"</p>"
-			+ "Input was: <p>" + cmd + "</p>"
 			+ "</div>";
 		sendChat(who, output);
 	},
 
-	myGetAttrByName = function(charId, attrName) {
+	myGetAttrByName = function(charId, attrName, createMissing) {
 		// Returns attribute object by name
 		let attr = findObjs({type: 'attribute', characterid: charId, name: attrName}, {caseInsensitive: true})[0];
-		if (!attr) {
+		if (!attr && createMissing) {
 			attr = createObj('attribute', {characterid: charId,	name: attrName});
 		}
 		return attr;
@@ -45,30 +44,50 @@ var chatSetAttr = chatSetAttr || (function() {
 		}
 	},
 
-	setAttributes = function(list, setting) {
-		// Input:	list - array of valid character IDs
-		//			setting - object containing attribute names and desired values
-		// Output:	null. Attribute values are changed.
+	deleteAttributes = function (list, setting) {
 		let attr;
-		list.forEach(function(c) {
-			_.each(setting, function(s,t) {
-				if (t.match(/^repeating_/)) {
-					attr = getRepeatingAttribute(c,t);
+		list.forEach(function(charid) {
+			_.each(setting, function(attrValue,attrName) {
+				if (attrName.match(/^repeating_/)) {
+					attr = getRepeatingAttribute(charid,attrName,false);
+					if (attr) {
+						attr.remove();
+					}
 				} else {
-					attr = myGetAttrByName(c,t);
-				}
-				if (attr) {
-					if (s.current !== undefined) attr.set('current',s.current);
-					if (s.max !== undefined) attr.set('max',s.max);
-				} else {
-					handleError('GM','Repeating attribute '+t+' invalid for character '+getAttrByName(c,'character_name'),'');
+					attr = findObjs({type: 'attribute', characterid: charid, name: attrName}, {caseInsensitive: true});
+					attr.forEach(a =>  a.remove());
 				}
 			});
 		});
 		return;
 	},
 
-	getRepeatingAttribute = function(charId, attrName) {
+	setAttributes = function(list, setting, createMissing) {
+		// Input:	list - array of valid character IDs
+		//			setting - object containing attribute names and desired values
+		// Output:	null. Attribute values are changed.
+		let attr;
+		list.forEach(function(charid) {
+			_.each(setting, function(attrValue,attrName) {
+				if (attrName.match(/^repeating_/)) {
+					attr = getRepeatingAttribute(charid,attrName,createMissing);
+				} else {
+					attr = myGetAttrByName(charid,attrName,createMissing);
+				}
+				if (attr) {
+					if (attrValue.current !== undefined) attr.set('current',attrValue.current);
+					if (attrValue.max !== undefined) attr.set('max',attrValue.max);
+				} else if (!createMissing) {
+					handleError('GM','Missing attribute '+attrName+' not created for character '+getAttrByName(charid,'character_name')+'.');
+				} else {
+					handleError('GM','Repeating attribute '+attrName+' invalid for character '+getAttrByName(charid,'character_name')+'.');
+				}
+			});
+		});
+		return;
+	},
+
+	getRepeatingAttribute = function(charId, attrName, createMissing) {
 		let attrMatch = attrName.match(/_\$\d+?_/), attr, attrNameSplit, repSectionIds;
 		if (attrMatch) {
 			let rowNum = parseInt(attrMatch[0].replace('$','').replace(/_/g,''));
@@ -80,7 +99,7 @@ var chatSetAttr = chatSetAttr || (function() {
 				.uniq()
 				.value();
 			if (!_.isUndefined(repSectionIds[rowNum])) {
- 				attr = myGetAttrByName(charId, attrNameSplit[0] + '_' + repSectionIds[rowNum] + '_' + attrNameSplit[1]);
+ 				attr = myGetAttrByName(charId, attrNameSplit[0] + '_' + repSectionIds[rowNum] + '_' + attrNameSplit[1], createMissing);
 			}
 		} else {
 			let idMatch = attrName.match(/_(-[-A-Za-z0-9]+?)_/)[0];
@@ -94,7 +113,7 @@ var chatSetAttr = chatSetAttr || (function() {
 					.uniq()
 					.value();
 				if (_.contains(repSectionIds, id) ){
- 					attr = myGetAttrByName(charId, attrNameSplit[0] + '_' + id + '_' + attrNameSplit[1]);
+ 					attr = myGetAttrByName(charId, attrNameSplit[0] + '_' + id + '_' + attrNameSplit[1], createMissing);
 				}
 			}
 		}
@@ -124,7 +143,6 @@ var chatSetAttr = chatSetAttr || (function() {
 		// Input:	args - array containing comma-separated list of strings, every one of which contains
 		// 			an expression of the form key|value or key|value|maxvalue
 		// Output:	Object containing key|value for all expressions.
-
 		args = _.chain(args)
 		.map(str => str.split(/\s*,\s*/))
 		.flatten()
@@ -165,10 +183,10 @@ var chatSetAttr = chatSetAttr || (function() {
 				control = character.get('controlledby').split(/,/);
 				if(!(playerIsGM(playerid) || _.contains(control,'all') || _.contains(control,playerid))) {
 					list.splice(k,1);
-					handleError(who, "Permission error.", "Name: " + character.get('name'));
+					handleError(who, "Permission error. Name: " + character.get('name'));
 				}
 			} else {
-				handleError(who, "Invalid character id.", "Id: " + list[k]);
+				handleError(who, "Invalid character id " + list[k]);
 				list.splice(k,1);
 			}
 		}
@@ -224,21 +242,31 @@ var chatSetAttr = chatSetAttr || (function() {
 			`<p>Setting ${_.keys(setting).join(", ")} to ${values} ` +
 			`for characters ${charNames}`;
 		if (replace) output += ' (replacing <,>,#,~ by [,],|,@)';
-		output += '.</p></div>'
+		output += '.</p></div>';
+		sendChat(who, output);
+	},
+
+	sendDeleteFeedback = function (who, list, setting) {
+		let charNames = list.map(id => getAttrByName(id, "character_name")).join(", ");
+		let output = `/w ${who}` +
+			'<div style="border: 1px solid black; background-color: #FFFFFF; padding: 3px 3px;">' +
+			`<p>Deleting attributes ${_.keys(setting).join(", ")} ` +
+			`for characters ${charNames}` +
+			'.</p></div>';
 		sendChat(who, output);
 	},
 
 	handleInput = function(msg) {
-		if (msg.type === "api" && msg.content.match(/^!setattr\b/)) {
+		if (msg.type === "api" && msg.content.match(/^!(set|del)attr\b/)) {
 			// Parsing
 			let charIDList;
 			const hasValue = ['charid','name'],
-				optsArray = ['all','allgm','charid','name','silent','sel','replace'],
+				optsArray = ['all','allgm','charid','name','silent','sel','replace', 'nocreate'],
 				opts = parseOpts(processInlinerolls(msg), hasValue),
 				setting = parseAttributes(_.chain(opts).omit(optsArray).keys().value(),opts.replace);
 
 			if (_.isEmpty(setting)) {
-				handleError(msg.who, "No attributes supplied.", msg.content);
+				handleError(msg.who, "No attributes supplied.");
 				return;
 			}
 
@@ -257,16 +285,21 @@ var chatSetAttr = chatSetAttr || (function() {
 			} else if (opts.sel && msg.selected) {
 				charIDList = getIDsFromTokens(msg.selected);
 			} else {
-				handleError(msg.who,"Don't know what to do.", msg.content);
+				handleError(msg.who,"Don't know what to do.");
 				return;
 			}
 
 			// Set attributes
-			setAttributes(charIDList, setting);
-
-			// Output
-			if (feedback && !opts.silent && !_.isEmpty(charIDList)) {
-				sendFeedback(msg.who, charIDList, setting, opts.replace);
+			if (msg.content.match(/^!delattr\b/)) {
+				deleteAttributes(charIDList, setting);
+				if (feedback && !opts.silent && !_.isEmpty(charIDList)) {
+					sendDeleteFeedback(msg.who, charIDList, setting);
+				}
+			} else {
+				setAttributes(charIDList, setting, !opts.nocreate);
+				if (feedback && !opts.silent && !_.isEmpty(charIDList)) {
+					sendFeedback(msg.who, charIDList, setting, opts.replace);
+				}
 			}
 		}
 		return;
