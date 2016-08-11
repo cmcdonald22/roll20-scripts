@@ -1,9 +1,9 @@
 var groupCheck = groupCheck || (function() {
     'use strict';
-    var version = '0.6.1',
+    var version = '0.6.2',
 	// Config Start
 	// Attribute list is for D&D 5E Shaped sheet
-	
+
 	die = "d20",			// Standard die to add to modifier. If constant, add 0d0 to
 							// work around sendChat bug. E.g. 0d0 + 10.
 	die_adv = "2d20kh1",	// Die for advantage
@@ -49,10 +49,10 @@ var groupCheck = groupCheck || (function() {
 		'Sleight of Hand': ['repeating_skill_$15_formula'],
 		'Stealth': ['repeating_skill_$16_formula'],
 		'Survival': ['repeating_skill_$17_formula']
-	},	
-	
+	},
+
 	// Config End
-	
+
 	checkInstall = function() {
 		if (alwaysRoll2 && useRollSetting) {
 			useRollSetting = false;
@@ -60,7 +60,7 @@ var groupCheck = groupCheck || (function() {
 		}
 		log('-=> groupCheck v'+version+' <=-');
 	},
-	
+
 	printHelp = function(who) {
 		var helpString;
 		helpString = `/w ${who} `;
@@ -75,7 +75,7 @@ var groupCheck = groupCheck || (function() {
 		helpString += "</p></div>";
 		sendChat(who, helpString);
 	},
-	
+
 	handleError = function(who, errorMsg, opts) {
 		var output = `/w ${who} `;
 		output += "<div style=\"border: 1px solid black; background-color: #FFBABA; padding: 3px 3px;\">";
@@ -91,7 +91,11 @@ var groupCheck = groupCheck || (function() {
 		var optsCommand,commandOutput;
 		optsCommand = '';
 		for (var s in opts) {
-			optsCommand += `--${s} `; 
+			if (opts.s === true) {
+				optsCommand += `--${s} `;
+			} else {
+				optsCommand += `--${s} ${opts.s} `
+			}
 		}
 		commandOutput = `/w ${who} `;
 		commandOutput += `<div style=\"border: 1px solid black; background-color: #FFFFFF; padding: 3px 3px;\">`;
@@ -103,7 +107,7 @@ var groupCheck = groupCheck || (function() {
 		sendChat(who, commandOutput);
 		return;
 	},
-	
+
 	addCharacterToOutput = function(tokenId, rollSetting, roll2, dieUsed, attrMods, rollAppendix, rollPre, rollPost, fallback, globalMod) {
 		var token, character, characterId, roll2Once = false, name, totalMod = ``, output = ``;
 		token = getObj('graphic', tokenId);
@@ -125,7 +129,7 @@ var groupCheck = groupCheck || (function() {
 							break;
 						default:
 							roll2Once = true;
-					} 
+					}
 				}
 				if (useTokenName) {
 					name = token.get("name");
@@ -133,14 +137,14 @@ var groupCheck = groupCheck || (function() {
 				else {
 					name = character.get("name");
 				}
-			
+
 				for (var s in attrMods) {
 					totalMod += ` + @{${character.get("name")}|${attrMods[s]}}`;
 				}
 				if (globalMod) {
 					totalMod += ` + ${globalMod}[global modifier]`;
 				}
-		
+
 				if (roll2 || roll2Once) {
 					output += `<p><b>${name}:</b> ${rollPre}${dieUsed} ${totalMod}${rollPost}`;
 					output += ` | ${rollPre}${dieUsed} ${totalMod}${rollPost}</p>`;
@@ -161,21 +165,21 @@ var groupCheck = groupCheck || (function() {
 					output += `<p><b>${name}:</b> ${rollPre}${dieUsed} + ${fallback}${rollPost}`;
 					output += ` | ${rollPre}${dieUsed} + ${fallback}${rollPost}</p>`;
 				} else {
-					output += `<p><b>${name}:</b> ${rollPre}${dieUsed} + ${fallback}${rollPost}${rollAppendix}</p>`;	
+					output += `<p><b>${name}:</b> ${rollPre}${dieUsed} + ${fallback}${rollPost}${rollAppendix}</p>`;
 				}
 			}
 		}
 		return output;
 	},
-	
+
 	handleInput = function(msg) {
 		var args, opts = {}, attr, attrMods, dieUsed = die, rollAppendix = ``, output = ``;
 		var rollPre = '[[', rollPost = ']]';
-		
+
 		if (msg.type !== "api") {
 			return;
 		}
-	
+
 		args = msg.content.split(/\s+--/);
 		switch(args.shift()) {
 			case '!group-check':
@@ -188,13 +192,13 @@ var groupCheck = groupCheck || (function() {
 						opts[args[k]] = true;
 					}
 				}
-				
+
 				// Help
 				if (opts.help) {
 					printHelp(msg.who);
 					return;
 				}
-				
+
 				// Look for attribute supplied
 				for (var s in attrList) {
 					if (opts[s]) {
@@ -202,7 +206,7 @@ var groupCheck = groupCheck || (function() {
 						attrMods = attrList[s];
 					}
 				}
-				
+
 				// Handle custom modifier
 				if (opts.custom) {
 					var kv = opts.custom.split(/\s*,\s*/);
@@ -213,28 +217,28 @@ var groupCheck = groupCheck || (function() {
 					attr = kv.shift();
 					attrMods = kv;
 				}
-				
+
 				// Print menu if we don't know what to roll
 				if (!attr && !opts.custom) {
 					printCommandMenu(msg.who,opts);
 					return;
 				}
-				
+
 				// Whisper output if desired
 				if ((whisperToGM || opts.GM) && !opts.Public) {
 					output += `/w GM `;
 				}
-				
+
 				// Output preamble
 				output += `<div style="border: 1px solid black; background-color: #FFFFFF; padding: 3px 3px;">`;
 				output += `<h3>${attr}</h3>`;
 				output += `<br>`;
-				
+
 				// Handle custom die. Ignored if rolling with advantage or disadvantage.
 				if (opts.die) {
 					dieUsed = opts.die;
 				}
-				
+
 				// Handle advantage and disadvantage.
 				if (opts.adv && !opts.roll2) {
 					dieUsed = die_adv;
@@ -243,32 +247,32 @@ var groupCheck = groupCheck || (function() {
 					dieUsed = die_dis;
 					rollAppendix = " (Disadvantage)";
 				}
-				
+
 				// Handle bonus hiding
 				if ((hideBonus && !opts.showbonus) || opts.hidebonus) {
 					rollPre= '[[[[';
 					rollPost= ']]]]';
 				}
-				
+
 				var rollSetting = (useRollSetting || opts.rollsetting) && !opts.roll2 && !opts.disadv && !opts.adv;
 				var roll2 = opts.roll2 || (alwaysRoll2 && !opts.rollsetting && !opts.adv && !opts.disadv);
-				
+
 				if (msg.selected && msg.selected.length) {
-					for (var sel in msg.selected) {						   
+					for (var sel in msg.selected) {
 						output += addCharacterToOutput(msg.selected[sel]._id, rollSetting, roll2, dieUsed, attrMods, rollAppendix, rollPre, rollPost, opts.fallback, opts.globalmod);
 					}
 				}
-				
+
 				output += `</div>`;
 				sendChat(msg.who, output);
-		} 
-		return; 
+		}
+		return;
 	},
-	
+
 	registerEventHandlers = function() {
 		on('chat:message', handleInput);
 	};
-	
+
 	return {
 		CheckInstall: checkInstall,
 		RegisterEventHandlers: registerEventHandlers
@@ -277,7 +281,7 @@ var groupCheck = groupCheck || (function() {
 
 on('ready',function() {
 	'use strict';
-	
+
 	groupCheck.CheckInstall();
 	groupCheck.RegisterEventHandlers();
 });
