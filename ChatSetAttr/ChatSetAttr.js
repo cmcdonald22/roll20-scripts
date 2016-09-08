@@ -1,8 +1,18 @@
+// ChatSetAttr version 0.9
+// Last Updated: 2016-08-29
+// A script to create, modify, or delete character attributes from the chat area or macros.
+
 var chatSetAttr = chatSetAttr || (function() {
     'use strict';
 
-	const version = '0.8',
+	const version = '0.9',
 	feedback = true,
+	replacers = [ ['<', '[', /</g, /\[/g],
+				['>',']' , />/g, /\]/g],
+				['#','|', /#/g, /\|/g],
+				['~','-', /\~/g, /\-/g],
+				[';','?', /\;/g, /\?/g],
+				['`','@', /`/g, /@/g]],
 
 	checkInstall = function() {
 		log(`-=> ChatSetAttr v${version} <=-`);
@@ -142,10 +152,9 @@ var chatSetAttr = chatSetAttr || (function() {
 	parseAttributes = function(args, replace) {
 		// Input:	args - array containing comma-separated list of strings, every one of which contains
 		// 			an expression of the form key|value or key|value|maxvalue
+		//			replace - true if characters from the replacers array should be replaced
 		// Output:	Object containing key|value for all expressions.
 		args = _.chain(args)
-		.map(str => str.split(/\s*,\s*/))
-		.flatten()
 		.map(str => str.split(/\s*\|\s*/))
 		.reject(a => a.length === 0)
 		.map(sanitizeAttributeArray)
@@ -154,7 +163,10 @@ var chatSetAttr = chatSetAttr || (function() {
 		if (replace) {
 			args = _.mapObject(args, function(obj) {
 				return _.mapObject(obj,	function (str) {
-					return str.replace(/</g,'[').replace(/>/g,']').replace(/#/g,'|').replace(/\~/g,'@');
+					for (let rep in replacers) {
+						str = str.replace(replacers[rep][2],replacers[rep][1]);
+					}
+					return str;
 				});
 			});
 		}
@@ -165,13 +177,13 @@ var chatSetAttr = chatSetAttr || (function() {
 		if (arr.length === 1)
 			return [arr[0],{current : ''}];
 		if (arr.length === 2)
-			return [arr[0],{current : arr[1].replace(/'/g,'')}];
+			return [arr[0],{current : arr[1].replace(/^'/,'').replace(/\'$/,'')}];
 		if (arr.length === 3 && arr[1] === '')
-			return [arr[0], {max : arr[2].replace(/'/g,'')}];
+			return [arr[0], {max : arr[2].replace(/^'/,'').replace(/\'$/,'')}];
 		if (arr.length === 3 && arr[1] === "''")
-			return [arr[0], {current : '', max : arr[2].replace(/'/g,'')}];
+			return [arr[0], {current : '', max : arr[2].replace(/^'/,'').replace(/\'$/,'')}];
 		else if (arr.length === 3)
-			return [arr[0], {current : arr[1].replace(/'/g,''), max : arr[2].replace(/'/g,'')}];
+			return [arr[0], {current : arr[1].replace(/^'/,'').replace(/\'$/,''), max : arr[2].replace(/^'/,'').replace(/\'$/,'')}];
 		if (arr.length > 3) return sanitizeAttributeArray(_.first(arr,3));
 	},
 
@@ -227,8 +239,12 @@ var chatSetAttr = chatSetAttr || (function() {
 		let values = _.chain(setting).values()
 			.map(function (o) {
 				return _.mapObject(o,function (str) {
-					if (replace) return str.replace(/\[/g,'<').replace(/\]/g,'>').replace(/\|/g,'#').replace(/@/g,'~');
-					else return str;
+					if (replace) {
+						for (let rep in replacers) {
+							str = str.replace(replacers[rep][3],replacers[rep][0]);
+						}
+					}
+					return str;
 				});})
 			.map(function (o) {
 				if (o.max !== undefined && o.current !== undefined)	return `${o.current} / ${o.max}`;
@@ -241,7 +257,13 @@ var chatSetAttr = chatSetAttr || (function() {
 			`<div style="border: 1px solid black; background-color: #FFFFFF; padding: 3px 3px;">` +
 			`<p>Setting ${_.keys(setting).join(", ")} to ${values} ` +
 			`for characters ${charNames}`;
-		if (replace) output += ' (replacing <,>,#,~ by [,],|,@)';
+		if (replace) {
+			output += ' (replacing '
+				+ _.map(replacers, arr => arr[0]).join()
+				+ ' by '
+				+ _.map(replacers, arr => arr[1]).join()
+				+ ')';
+		}
 		output += '.</p></div>';
 		sendChat(who, output);
 	},
@@ -264,7 +286,6 @@ var chatSetAttr = chatSetAttr || (function() {
 				optsArray = ['all','allgm','charid','name','silent','sel','replace', 'nocreate'],
 				opts = parseOpts(processInlinerolls(msg), hasValue),
 				setting = parseAttributes(_.chain(opts).omit(optsArray).keys().value(),opts.replace);
-
 			if (_.isEmpty(setting)) {
 				handleError(msg.who, "No attributes supplied.");
 				return;
