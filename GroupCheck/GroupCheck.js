@@ -145,12 +145,12 @@ var groupCheck = groupCheck || (function() {
 
 	// TODO: Make the help actually useful.
 	printHelp = function(who) {
-		let helpString = '/w ' + who + ' No help, sorry. Please refer to the forum thread.';
+		let helpString = '/w ' + who + ' No help, sorry. Please refer to the documentation.';
 		sendChat(who, helpString);
 	},
 
 	printConfigHelp = function(who) {
-		let helpString = '/w ' + who + ' No help, sorry. Please refer to the forum thread.';
+		let helpString = '/w ' + who + ' No help, sorry. Please refer to the documentation.';
 		sendChat(who, helpString);
 	},
 
@@ -226,9 +226,9 @@ var groupCheck = groupCheck || (function() {
 		return 'roll2';
 	},
 
-	// TODO: Give everyone a nice picture?
 	addCharacterToOutput = function(selected, checkMods, opts) {
-		let token, character, characterId, output = '', name, rollOption, totalMod = '', dieUsed, rollPre, rollPost, rollAppendix = '';
+		let token, character, characterId, output = '', name, rollOption,
+			totalMod = '', dieUsed, rollPre, rollPost, rollAppendix = '';
 		if (selected._type === 'graphic') {
 			token = getObj('graphic', selected._id);
 			characterId = token.get('represents');
