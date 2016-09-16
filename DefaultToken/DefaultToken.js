@@ -20,7 +20,7 @@ var defaultToken = defaultToken || (function() {
 		list.forEach(function (pair) {
 			setDefaultTokenForCharacter(pair[0], pair[1]);
 		});
-	}
+	},
 
 	handleInput = function(msg) {
 		if (msg.type === 'api' && msg.content.search(/^!default-token\b/) !== -1 && msg.selected) {
