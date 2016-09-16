@@ -21,6 +21,20 @@ var defaultToken = defaultToken || (function() {
 			setDefaultTokenForCharacter(pair[0], pair[1]);
 		});
 	},
+	
+	parseOpts = function(content, hasValue) {
+		let args, kv, opts = {};
+		args = _.rest(content.split(/\s+--/));
+		for (let k in args) {
+			kv = args[k].split(/\s(.+)/);
+			if (_.contains(hasValue, kv[0])) {
+				opts[kv[0]] = kv[1];
+			} else {
+				opts[args[k]] = true;
+			}
+		}
+		return opts;
+	},
 
 	handleInput = function(msg) {
 		if (msg.type === 'api' && msg.content.search(/^!default-token\b/) !== -1 && msg.selected) {
@@ -31,14 +45,16 @@ var defaultToken = defaultToken || (function() {
 				.map(a => [getObj('character', a[0]), a[1]])
 				.filter(a => a[0])
 				.value();
+				
+			const opts = _.defaults(parseOpts(msg.content, ['wait']), {wait: '0'});
 
-			_.delay(setDefaultTokenForList, 3000, tokensAndChars);
+			_.delay(setDefaultTokenForList, opts.wait, tokensAndChars);
 
 			if (feedback) {
 				let output = '/w "' + getPlayerName(msg.who) +
 					'" Default tokens set for characters ' +
 					_.map(tokensAndChars, a => a[0].get('name')).join(', ') + '.'
-				sendChat('API', output, null, {noarchive:true});
+				sendChat('API', output);
 			}
 		}
 		return;
