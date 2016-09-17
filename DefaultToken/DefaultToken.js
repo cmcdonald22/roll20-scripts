@@ -1,7 +1,7 @@
 var defaultToken = defaultToken || (function() {
-    'use strict';
-    const version = '1.0',
-    feedback = true,
+	'use strict';
+	const version = '1.0',
+	feedback = true,
 
 	checkInstall = function() {
 		log('-=> DefaultToken v'+version+' <=-');
@@ -50,7 +50,7 @@ var defaultToken = defaultToken || (function() {
 
 			_.delay(setDefaultTokenForList, opts.wait, tokensAndChars);
 
-			if (feedback) {
+			if (feedback && msg.selected) {
 				let output = '/w "' + getPlayerName(msg.who) +
 					'" Default tokens set for characters ' +
 					_.map(tokensAndChars, a => a[0].get('name')).join(', ') + '.'
