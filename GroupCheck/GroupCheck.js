@@ -1,7 +1,8 @@
 var groupCheck = groupCheck || (function() {
     'use strict';
-    const version = '0.7', stateVersion = 1,
+    const version = '0.7.1', stateVersion = 1,
 
+	// Data variables
 	importData = {
 		'5E-Shaped' : {
 			'Strength Save': { 'name' : 'Strength Saving Throw', 'mod' : ['strength_saving_throw_mod'] },
@@ -116,6 +117,7 @@ var groupCheck = groupCheck || (function() {
 
 	rollOptions = ['roll1', 'roll2', 'adv', 'dis', 'rollsetting'],
 
+	// Setup
 	checkInstall = function() {
 		if (!state.groupCheck) {
 			initializeState();
@@ -132,6 +134,7 @@ var groupCheck = groupCheck || (function() {
 		log('-=> groupCheck initialized with default settings!<=-');
 	},
 
+	// Utility functions
 	safeReadJSON = function (string) {
 	    try {
         	let o = JSON.parse(string);
@@ -143,15 +146,35 @@ var groupCheck = groupCheck || (function() {
    		return false;
 	},
 
+	sendChatNoarchive = function(who, string) {
+		sendChat(who, string, null, {noarchive:true});
+	},
+
+	getPlayerName = function(who) {
+		let match = who.match(/(.*) \(GM\)/);
+		if (match) {
+			return match[1];
+		} else {
+			return who;
+		}
+	},
+
+	handleError = function(who, errorMsg) {
+		let output = '/w "' + who +
+			'" <div style="border: 1px solid black; background-color: #FFBABA; padding: 3px 3px;">' +
+			'<h4>Error</h4><p>' + errorMsg + '</p></div>';
+		sendChatNoarchive('GroupCheck', output);
+	},
+
 	// TODO: Make the help actually useful.
 	printHelp = function(who) {
-		let helpString = '/w ' + who + ' No help, sorry. Please refer to the documentation.';
-		sendChat(who, helpString);
+		let helpString = '/w "' + who + '" No help, sorry. Please refer to the documentation.';
+		sendChatNoarchive('GroupCheck', helpString);
 	},
 
 	printConfigHelp = function(who) {
-		let helpString = '/w ' + who + ' No help, sorry. Please refer to the documentation.';
-		sendChat(who, helpString);
+		let helpString = '/w "' + who + '" No help, sorry. Please refer to the documentation.';
+		sendChatNoarchive('GroupCheck', helpString);
 	},
 
 	printCommandMenu = function(who, opts) {
@@ -165,21 +188,20 @@ var groupCheck = groupCheck || (function() {
 				optsCommand += `--${key} ${value} `;
 			}
 		});
-		commandOutput = '/w ' + who;
-		commandOutput += ' <div style="border: 1px solid black; background-color: #FFFFFF; padding: 3px 3px;">';
+		commandOutput = '/w "' + who;
+		commandOutput += '" <div style="border: 1px solid black; background-color: #FFFFFF; padding: 3px 3px;">';
 		commandOutput += '<h3>Available commands:</h3>';
 		for (let s in state.groupCheck.checkList) {
 			commandOutput += `[${s}](!group-check ${optsCommand} --${s})`;
 		}
 		commandOutput += '</div>';
-		sendChat(who, commandOutput);
+		sendChatNoarchive('GroupCheck', commandOutput);
 		return;
 	},
 
-	printConfig = function (who) {
+	getConfigTable = function() {
 		let die, name, mod;
-		let output = "/w " + who +
-			' <div style="border: 1px solid black; background-color: #FFFFFF; padding: 3px 3px;display:inline-block;">' +
+		let output = '<div style="border: 1px solid black; background-color: #FFFFFF; padding: 3px 3px;display:inline-block;">' +
 			'<h4>Current Options</h4><br> <table style="margin:3px;">' +
 			'<tr><td><b>Name</b></td><td><b>Value</td></b></tr>';
 		_.each(state.groupCheck.options, function(value, key) {
@@ -201,14 +223,7 @@ var groupCheck = groupCheck || (function() {
 			output += '<tr><td>'+key+'</td><td>'+name+'</td><td>'+mod+'</td><td>'+die+'</td></tr>';
 		});
 		output += '</table></div>';
-		sendChat(who, output);
-	},
-
-	handleError = function(who, errorMsg) {
-		let output = "/w " + who + " " +
-			"<div style=\"border: 1px solid black; background-color: #FFBABA; padding: 3px 3px;\">" +
-			"<h4>Error</h4>" + "<p>" + errorMsg + "</p>" + "</div>";
-		sendChat(who, output);
+		return output;
 	},
 
 	getRollOption = function(charid) {
@@ -226,18 +241,13 @@ var groupCheck = groupCheck || (function() {
 		return 'roll2';
 	},
 
-	addCharacterToOutput = function(selected, checkMods, opts) {
+	addCharacterToOutput = function(selected, checkMods, opts, rollPre, rollPost) {
 		let token, character, characterId, output = '', name, rollOption,
-			totalMod = '', dieUsed, rollPre, rollPost, rollAppendix = '';
+			totalMod = '', dieUsed, rollAppendix = '', charName;
 		if (selected._type === 'graphic') {
 			token = getObj('graphic', selected._id);
 			characterId = token.get('represents');
-			if (opts.hidebonus) {
-				rollPre = '[[[['; rollPost = ']]]]';
-			}
-			else {
-				rollPre = '[['; rollPost = ']]';
-			}
+
 			if (opts.ro === 'rollsetting') {
 				if (characterId !== '') {
 					rollOption = getRollOption(characterId);
@@ -266,18 +276,19 @@ var groupCheck = groupCheck || (function() {
 
 			character = getObj('character', characterId);
 			if (character) {
+				charName = character.get('name');
 				if (opts.usetokenname) {
 					name = token.get('name');
 				}
 				else {
-					name = character.get('name');
+					name = charName;
 				}
 				checkMods.forEach(function (mod) {
-					totalMod += ` + @{${character.get('name')}|${mod}}`;
+					totalMod += ` + @{${charName}|${mod}}`;
 				});
 			}
 			else if (opts.fallback) {
-				name = token.get('name') || `<img src='${token.get('imgsrc')}' height="35" width="35">`;
+				name = token.get('name') || `<img src="${token.get('imgsrc')}" height="35" width="35">`;
 				totalMod = ` +(${opts.fallback}[fallback])`;
 			}
 			else {
@@ -318,167 +329,192 @@ var groupCheck = groupCheck || (function() {
 		return opts;
 	},
 
-	handleInput = function(msg) {
-		if (msg.type === "api" && msg.content.search(/^!group-check\s/) != -1) {
-			const hasValue = ['fallback','custom','die','die_adv','die_dis','globalmod','ro'];
-			let checkCmd, checkName, checkMods, output = '';
+	handleConfig = function (msg) {
+		const hasValueConfig = ['import','add','delete','set'];
+		const valueOptions = ['fallback','die','die_adv','die_dis','globalmod'];
+		const booleanOptions = ['whisper', 'usetokenname', 'hidebonus'];
+		const booleanOptionsNegative = ['public', 'usecharname', 'showbonus'];
+		let opts = processOpts(msg.content, hasValueConfig);
+		let who = getPlayerName(msg.who), output;
 
-			// Options processing
-			let opts = processOpts(msg.content, hasValue);
-			checkCmd = _.intersection(_.keys(state.groupCheck.checkList), _.keys(opts))[0];
-			if (checkCmd) {
-				checkMods = state.groupCheck.checkList[checkCmd].mod;
-				opts.die = opts.die || state.groupCheck.checkList[checkCmd].die;
-				checkName = state.groupCheck.checkList[checkCmd].name;
-			}
-			if (opts.showbonus) {
-				opts.hidebonus = false;
-				delete opts.showbonus;
-			}
-			if (opts.usecharname) {
-				opts.usetokenname = false;
-				delete opts.usecharname;
-			}
-			if (opts.public) {
-				opts.whisper = false;
-				delete opts.public;
-			}
-			opts = _.defaults(opts, state.groupCheck.options);
+		if (!playerIsGM(msg.playerid)) {
+			sendChatNoarchive('GroupCheck', whisper + 'Permission denied.');
+			return;
+		}
 
-			// Help
-			if (opts.help) {
-				printHelp(msg.who);
-				return;
+		if (opts.import) {
+			if (_.has(importData,opts.import)) {
+				_.extend(state.groupCheck.checkList, importData[opts.import]);
+				output = 'Data set ' + opts.import + ' imported.';
+			} else {
+				handleError(who, 'Dataset ' + opts.import + ' not found.');
 			}
-
-			if (_.indexOf(rollOptions, opts.ro) === -1) {
-				handleError(msg.who,'Roll option ' + opts.ro + ' is invalid, sorry.');
-				return;
+		}
+		else if (opts.add) {
+			let data = safeReadJSON(opts.add);
+			if (_.isObject(data)) {
+				_.each(data, function (value, key) {
+					if (!(_.isObject(value) && _.has(value, 'name') && _.has(value,'mod') && _.isArray(value.mod))) {
+						delete data[key];
+					}
+				});
+				_.extend(state.groupCheck.checkList, data);
+				output = 'Checks added. The imported JSON was ' + JSON.stringify(data);
+			} else {
+				handleError(who, 'Error reading input.');
 			}
-			// Handle custom modifier
-			if (opts.custom) {
-				let kv = opts.custom.split(/\s*,\s*/);
-				if (kv.length < 2) {
-					handleError(msg.who,"Custom roll format invalid");
+		}
+		else if (opts.delete) {
+			if (_.has(state.groupCheck.checkList, opts.delete)) {
+				delete state.groupCheck.checkList[opts.delete];
+				output = 'Check ' + opts.delete + ' deleted.';
+			} else {
+				handleError(who, 'Check called ' + opts.delete+ ' not found.');
+			}
+		}
+		else if (opts.clear) {
+			state.groupCheck.checkList = {};
+			output = 'All checks cleared.';
+		}
+		else if (opts.set) {
+			const kv = opts.set.split(/\s(.+)/);
+			if (_.indexOf(valueOptions, kv[0]) !== -1) {
+				state.groupCheck.options[kv[0]] = kv[1];
+				output = 'Option ' + kv[0] + ' set to ' + kv[1] + '.';
+			}
+			else if (kv[0] === 'ro') {
+				if (_.indexOf(rollOptions, kv[1]) !== -1) {
+					state.groupCheck.options.ro = kv[1];
+					output = 'Option ' + kv[0] + ' set to ' + kv[1] + '.';
+				} else {
+					handleError(who, 'Roll option ' + kv[1] + ' is invalid, sorry.');
 					return;
 				}
-				checkName = kv.shift();
-				checkMods = kv;
 			}
-
-			// Print menu if we don't know what to roll
-			if (!checkCmd) {
-				printCommandMenu(msg.who,opts);
-				return;
+			else if (_.indexOf(booleanOptions, kv[0]) !== -1) {
+				state.groupCheck.options[kv[0]] = true;
+				output = 'Option ' + kv[0] + ' set to ' + state.groupCheck.options[kv[0]] + '.';
 			}
-
-			// Output
-			if (opts.whisper) {
-				output += '/w GM ';
-			}
-
-			output += '<div style="border: 1px solid black; background-color: #FFFFFF; padding: 3px 3px;">'
-			+ '<h3>'+ checkName +'</h3>'
-			+ '<br>';
-			if (msg.selected) {
-				msg.selected.forEach(function(obj) {
-						output += addCharacterToOutput(obj, checkMods, opts);
-				});
-			}
-
-			output += '</div>';
-			sendChat(msg.who, output);
-		}
-		if (msg.type === "api" && msg.content.search(/^!group-check-config\b/) != -1) {
-			const hasValueConfig = ['import','add','delete','set'];
-			const valueOptions = ['fallback','die','die_adv','die_dis','globalmod'];
-			const booleanOptions = ['whisper', 'usetokenname', 'hidebonus'];
-			const booleanOptionsNegative = ['public', 'usecharname', 'showbonus'];
-			let opts = processOpts(msg.content, hasValueConfig);
-
-			if (!playerIsGM(msg.playerid)) {
-				sendChat(msg.who, '/w GM Permission denied.');
-				return;
-			}
-
-			if (opts.import) {
-				if (_.has(importData,opts.import)) {
-					_.extend(state.groupCheck.checkList, importData[opts.import]);
-					sendChat(msg.who, '/w GM Data set ' + opts.import + ' imported.');
-				} else {
-					handleError(msg.who, 'Dataset ' + opts.import + ' not found.');
-				}
-			}
-			else if (opts.add) {
-				let data = safeReadJSON(opts.add);
-				if (_.isObject(data)) {
-					_.each(data, function (value, key) {
-						if (!(_.isObject(value) && _.has(value, 'name') && _.has(value,'mod') && _.isArray(value.mod))) {
-							delete data[key];
-						}
-					});
-					_.extend(state.groupCheck.checkList, data);
-					sendChat(msg.who, '/w GM Checks added. The imported JSON was ' + JSON.stringify(data));
-				} else {
-					handleError(msg.who, 'Error reading options.');
-				}
-			}
-			else if (opts.delete) {
-				if (_.has(state.groupCheck.checkList, opts.delete)) {
-					delete state.groupCheck.checkList[opts.delete];
-					sendChat(msg.who, '/w GM Check ' + opts.delete + ' deleted.');
-				} else {
-					handleError(msg.who, 'Check called ' + opts.delete+ ' not found.');
-				}
-			}
-			else if (opts.clear) {
-				state.groupCheck.checkList = {};
-				sendChat(msg.who, '/w GM All checks cleared.');
-			}
-			else if (opts.set) {
-				const kv = opts.set.split(/\s(.+)/);
-				if (_.indexOf(valueOptions, kv[0]) !== -1) {
-					state.groupCheck.options[kv[0]] = kv[1];
-					sendChat(msg.who, '/w GM Option ' + kv[0] + ' set to ' + kv[1] + '.');
-				}
-				else if (kv[0] === 'ro') {
-					if (_.indexOf(rollOptions, kv[1]) !== -1) {
-						state.groupCheck.options.ro = kv[1];
-						sendChat(msg.who, '/w ' + msg.who + ' Option ' + kv[0] + ' set to ' + kv[1] + '.');
-					} else {
-						handleError(msg.who, 'Roll option ' + kv[1] + ' is invalid, sorry.');
-						return;
-					}
-				}
-				else if (_.indexOf(booleanOptions, kv[0]) !== -1) {
-					state.groupCheck.options[kv[0]] = true;
-					sendChat(msg.who, '/w GM Option ' + kv[0] + ' set to ' + state.groupCheck.options[kv[0]] + '.');
-				}
-				else if (_.indexOf(booleanOptionsNegative, kv[0]) !== -1) {
-					if (kv[0] === 'public') kv[0] = 'whisper';
-					if (kv[0] === 'showbonus') kv[0] = 'hidebonus';
-					if (kv[0] === 'usecharname') kv[0] = 'usetokenname';
-					state.groupCheck.options[kv[0]] = false;
-					sendChat(msg.who, '/w GM Option ' + kv[0] + ' set to ' + state.groupCheck.options[kv[0]] + '.');
-				}
-				else {
-					handleError(msg.who, 'Command not understood.');
-				}
-			}
-			else if (opts.defaults) {
-				state.groupCheck.options = defaultOptions;
-				sendChat(msg.who, '/w GM All options reset to defaults.');
-			}
-			else if (opts.reset) {
-				initializeState();
-				sendChat(msg.who, '/w GM Everything is rest to factory settings.');
-			}
-			else if (opts.show) {
-				printConfig(msg.who);
+			else if (_.indexOf(booleanOptionsNegative, kv[0]) !== -1) {
+				if (kv[0] === 'public') kv[0] = 'whisper';
+				if (kv[0] === 'showbonus') kv[0] = 'hidebonus';
+				if (kv[0] === 'usecharname') kv[0] = 'usetokenname';
+				state.groupCheck.options[kv[0]] = false;
+				output = 'Option ' + kv[0] + ' set to ' + state.groupCheck.options[kv[0]] + '.';
 			}
 			else {
-				printConfigHelp(msg.who);
+				handleError(who, 'Command not understood.');
 			}
+		}
+		else if (opts.defaults) {
+			state.groupCheck.options = defaultOptions;
+			output = 'All options reset to defaults.';
+		}
+		else if (opts.reset) {
+			initializeState();
+			output = 'Everything is reset to factory settings.';
+		}
+		else if (opts.show) {
+			output = getConfigTable();
+		}
+		else {
+			printConfigHelp(who);
+		}
+
+		if (output) {
+			sendChatNoarchive('GroupCheck', '/w "' + who + '" ' + output);
+		}
+
+		return;
+	},
+
+	handleOutput = function (msg) {
+		const hasValue = ['fallback','custom','die','die_adv','die_dis','globalmod','ro'];
+		let checkCmd, checkName, checkMods, output = '', rollPre, rollPost;
+		let who = getPlayerName(msg.who);
+
+		// Options processing
+		let opts = processOpts(msg.content, hasValue);
+		checkCmd = _.intersection(_.keys(state.groupCheck.checkList), _.keys(opts))[0];
+		if (checkCmd) {
+			checkMods = state.groupCheck.checkList[checkCmd].mod;
+			opts.die = opts.die || state.groupCheck.checkList[checkCmd].die;
+			checkName = state.groupCheck.checkList[checkCmd].name;
+		}
+		if (opts.showbonus) {
+			opts.hidebonus = false;
+			delete opts.showbonus;
+		}
+		if (opts.usecharname) {
+			opts.usetokenname = false;
+			delete opts.usecharname;
+		}
+		if (opts.public) {
+			opts.whisper = false;
+			delete opts.public;
+		}
+		opts = _.defaults(opts, state.groupCheck.options);
+
+		// Help
+		if (opts.help) {
+			printHelp(who);
+			return;
+		}
+
+		if (_.indexOf(rollOptions, opts.ro) === -1) {
+			handleError(who,'Roll option ' + opts.ro + ' is invalid, sorry.');
+			return;
+		}
+		// Handle custom modifier
+		if (opts.custom) {
+			let kv = opts.custom.split(/\s*,\s*/);
+			if (kv.length < 2) {
+				handleError(who,"Custom roll format invalid");
+				return;
+			}
+			checkName = kv.shift();
+			checkMods = kv;
+			checkCmd = true;
+		}
+
+		// Print menu if we don't know what to roll
+		if (!checkCmd) {
+			printCommandMenu(who,opts);
+			return;
+		}
+
+		// Output
+		if (opts.whisper) {
+			output += '/w GM ';
+		}
+
+		if (opts.hidebonus) {
+				rollPre = '[[[['; rollPost = ']]]]';
+			}
+		else {
+				rollPre = '[['; rollPost = ']]';
+		}
+
+
+		output += '<div style="border: 1px solid black; background-color: #FFFFFF; padding: 3px 3px;">'
+		+ '<h3>'+ checkName +'</h3>'
+		+ '<br>';
+		if (msg.selected) {
+			msg.selected.forEach(function(obj) {
+					output += addCharacterToOutput(obj, checkMods, opts, rollPre, rollPost);
+			});
+		}
+
+		output += '</div>';
+		sendChat(who, output);
+	},
+
+	handleInput = function(msg) {
+		if (msg.type === "api" && msg.content.search(/^!group-check\b/) != -1 && msg.content.search(/^!group-check-config\b/) == -1) {
+			handleOutput(msg);
+		}
+		else if (msg.type === "api" && msg.content.search(/^!group-check-config\b/) != -1) {
+			handleConfig(msg);
 		}
 		return;
 	},
