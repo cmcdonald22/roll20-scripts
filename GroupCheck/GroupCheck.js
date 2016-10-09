@@ -1,6 +1,6 @@
 var groupCheck = groupCheck || (function() {
     'use strict';
-    const version = '0.7.1', stateVersion = 1,
+    const version = '0.7.2', stateVersion = 1,
 
 	// Data variables
 	importData = {
@@ -429,8 +429,8 @@ var groupCheck = groupCheck || (function() {
 	},
 
 	handleOutput = function (msg) {
-		const hasValue = ['fallback','custom','die','die_adv','die_dis','globalmod','ro'];
-		let checkCmd, checkName, checkMods, output = '', rollPre, rollPost;
+		const hasValue = ['fallback','custom','die','die_adv','die_dis','globalmod','ro','multi'];
+		let checkCmd, checkName, checkMods, output = '', rollPre, rollPost, numberOfTimes;
 		let who = getPlayerName(msg.who);
 
 		// Options processing
@@ -460,7 +460,9 @@ var groupCheck = groupCheck || (function() {
 			printHelp(who);
 			return;
 		}
-
+		
+		numberOfTimes = (opts.multi > 1 ) ? parseInt(opts.multi):1;
+		
 		if (_.indexOf(rollOptions, opts.ro) === -1) {
 			handleError(who,'Roll option ' + opts.ro + ' is invalid, sorry.');
 			return;
@@ -495,13 +497,14 @@ var groupCheck = groupCheck || (function() {
 				rollPre = '[['; rollPost = ']]';
 		}
 
-
 		output += '<div style="border: 1px solid black; background-color: #FFFFFF; padding: 3px 3px;">'
-		+ '<h3>'+ checkName +'</h3>'
-		+ '<br>';
+		+ '<h3>'+ checkName +'</h3>'+'<br>';
 		if (msg.selected) {
 			msg.selected.forEach(function(obj) {
-					output += addCharacterToOutput(obj, checkMods, opts, rollPre, rollPost);
+					let charOutput = addCharacterToOutput(obj, checkMods, opts, rollPre, rollPost);
+					for (let i=0; i < numberOfTimes; i++) {
+						output += charOutput;
+					}
 			});
 		}
 
