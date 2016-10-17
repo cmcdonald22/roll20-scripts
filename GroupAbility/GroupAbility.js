@@ -2,29 +2,8 @@ const groupAbility = groupAbility || (function() {
     'use strict';
     const version = '1',
 
-	// Init
 	checkInstall = function() {
 		log('-=> groupAbility v'+version+' <=-');
-	},
-
-	sendChatNoarchive = function(who, string) {
-		sendChat(who, string, null, {noarchive:true});
-	},
-
-	getPlayerName = function(who) {
-		let match = who.match(/(.*) \(GM\)/);
-		if (match) {
-			return match[1];
-		} else {
-			return who;
-		}
-	},
-
-	handleError = function(who, errorMsg) {
-		let output = '/w "' + who +
-			'" <div style="border: 1px solid black; background-color: #FFBABA; padding: 3px 3px;">' +
-			'<h4>Error</h4><p>' + errorMsg + '</p></div>';
-		sendChatNoarchive('GroupAbility', output);
 	},
 
 	processOpts = function(content, hasValue) {
@@ -47,7 +26,7 @@ const groupAbility = groupAbility || (function() {
 		return opts;
 	},
 
-	callAbilitiesForToken = function(who, selected, commands, opts) {
+	callAbilitiesForToken = function(selected, commands, opts) {
 		let token, characterId, character, name, output;
 		if (selected._type === 'graphic') {
 			token = getObj('graphic', selected._id);
@@ -71,8 +50,7 @@ const groupAbility = groupAbility || (function() {
 
 	processOutput = function (msg) {
 		const hasValue = ['prefix', 'suffix', 'multi'],
-			optsDefault = { 'prefix' : '', 'suffix' : ''},
-			who = getPlayerName(msg.who);
+			optsDefault = { 'prefix' : '', 'suffix' : ''};
 
 		// Options processing
 		let opts = _.defaults(processOpts(msg.content, hasValue),optsDefault),
@@ -82,7 +60,7 @@ const groupAbility = groupAbility || (function() {
 
 		if (msg.selected) {
 			msg.selected.forEach(function(obj) {
-				callAbilitiesForToken(who, obj, commands, opts);
+				callAbilitiesForToken(obj, commands, opts);
 			});
 		}
 		return;
