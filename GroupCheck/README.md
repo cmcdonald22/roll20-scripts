@@ -66,6 +66,8 @@ Most of the following options can be supplied in two ways: you can either supply
 
 * It is possible to hide the bonus on rolls and only show the final result of the roll. This is controlled via the options **--showbonus** and **--hidebonus**.
 
+* You can use **--multi [n]** to run every check **[n]** times instead of once, with a minimum of 1 time.
+
 * You can supply a fallback value. When the option **--fallback [value]** is given, a roll will be made even for tokens not linked to a character; for these tokens, **[value]** is used instead of a character's attribute as modifier to the roll. **[value]** may be any expression that the roll20 dice roller can interpret, such as a number, a die roll, a specific character's attribute, or a sum of these things. If also using **--globalmod**, the global modifier is applied in addition to the fallback mod.
 
 * It is possible to supply a custom roll not present in the checks database. The syntax to do this is **--custom CheckName, mod\_1, ..., mod\_n**. This will roll a check with title **CheckName** and modifiers **mod\_1**, **mod\_2**, and so on.
