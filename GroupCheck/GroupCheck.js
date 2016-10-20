@@ -1,118 +1,117 @@
 var groupCheck = groupCheck || (function() {
     'use strict';
-    const version = '0.7.2', stateVersion = 1,
+    const version = '0.8', stateVersion = 2,
 
 	// Data variables
 	importData = {
 		'5E-Shaped' : {
-			'Strength Save': { 'name' : 'Strength Saving Throw', 'mod' : ['strength_saving_throw_mod'] },
-			'Dexterity Save': { 'name' : 'Dexterity Saving Throw', 'mod' : ['dexterity_saving_throw_mod'] },
-			'Constitution Save': { 'name' : 'Constitution Saving Throw', 'mod' : ['constitution_saving_throw_mod'] },
-			'Intelligence Save': { 'name' : 'Intelligence Saving Throw', 'mod' : ['intelligence_saving_throw_mod'] },
-			'Wisdom Save': { 'name' : 'Wisdom Saving Throw', 'mod' : ['wisdom_saving_throw_mod'] },
-			'Charisma Save': { 'name' : 'Charisma Saving Throw', 'mod' : ['charisma_saving_throw_mod'] },
-//			'Fortitude Save': { 'name' : 'Fortitude Saving Throw', 'mod' : ['fortitude_saving_throw_mod'] },
-//			'Reflex Save': { 'name' : 'Reflex Saving Throw', 'mod' : ['reflex_saving_throw_mod'] },
-//			'Will Save': { 'name' : 'Will Saving Throw', 'mod' : ['will_saving_throw_mod'] },
-			'Strength Check': { 'name' : 'Strength Check', 'mod' : ['strength_check_mod_formula'] },
-			'Dexterity Check': { 'name' : 'Dexterity Check', 'mod' : ['dexterity_check_mod_formula'] },
-			'Constitution Check': { 'name' : 'Constitution Check', 'mod' : ['constitution_check_mod_formula'] },
-			'Intelligence Check': { 'name' : 'Intelligence Check', 'mod' : ['intelligence_check_mod_formula'] },
-			'Wisdom Check': { 'name' : 'Wisdom Check', 'mod' : ['wisdom_check_mod_formula'] },
-			'Charisma Check': { 'name' : 'Charisma Check', 'mod' : ['charisma_check_mod_formula'] },
-			'Acrobatics': { 'name' : 'Dexterity (Acrobatics) Check', 'mod' : ['repeating_skill_$0_formula'] },
-			'Animal Handling': { 'name' : 'Wisdom (Animal Handling) Check', 'mod' : ['repeating_skill_$1_formula'] },
-			'Arcana': { 'name' : 'Intelligence (Arcana) Check', 'mod' : ['repeating_skill_$2_formula'] },
-			'Athletics': { 'name' : 'Strength (Athletics) Check', 'mod' : ['repeating_skill_$3_formula'] },
-			'Deception': { 'name' : 'Charisma (Deception) Check', 'mod' : ['repeating_skill_$4_formula'] },
-			'History': { 'name' : 'Intelligence (History) Check', 'mod' : ['repeating_skill_$5_formula'] },
-			'Insight': { 'name' : 'Wisdom (Insight) Check', 'mod' : ['repeating_skill_$6_formula'] },
-			'Intimidation': { 'name' : 'Charisma (Intimidation) Check', 'mod' : ['repeating_skill_$7_formula'] },
-			'Investigation': { 'name' : 'Intelligence (Investigation) Check', 'mod' : ['repeating_skill_$8_formula'] },
-			'Medicine': { 'name' : 'Wisdom (Medicine) Check', 'mod' : ['repeating_skill_$9_formula'] },
-			'Nature': { 'name' : 'Intelligence (Nature) Check', 'mod' : ['repeating_skill_$10_formula'] },
-			'Perception': { 'name' : 'Wisdom (Perception) Check', 'mod' : ['repeating_skill_$11_formula'] },
-			'Performance': { 'name' : 'Charisma (Performance) Check', 'mod' : ['repeating_skill_$12_formula'] },
-			'Persuasion': { 'name' : 'Charisma (Persuasion) Check', 'mod' : ['repeating_skill_$13_formula'] },
-			'Religion': { 'name' : 'Intelligence (Religion) Check', 'mod' : ['repeating_skill_$14_formula'] },
-			'Sleight of Hand': { 'name' : 'Dexterity (Sleight of Hand) Check', 'mod' : ['repeating_skill_$15_formula'] },
-			'Stealth': { 'name' : 'Dexterity (Stealth) Check', 'mod' : ['repeating_skill_$16_formula'] },
-			'Survival': { 'name' : 'Wisdom (Survival) Check', 'mod' : ['repeating_skill_$17_formula'] },
-			'AC' : { 'name' : 'Armor Class', 'mod' : ['AC'], 'die' : '0d0'}
+			'Strength Save': { 'name' : 'Strength Saving Throw', 'formula' : 'd20 + %strength_saving_throw_mod%' },
+			'Dexterity Save': { 'name' : 'Dexterity Saving Throw', 'formula' : 'd20 + %dexterity_saving_throw_mod%' },
+			'Constitution Save': { 'name' : 'Constitution Saving Throw', 'formula' : 'd20 + %constitution_saving_throw_mod%' },
+			'Intelligence Save': { 'name' : 'Intelligence Saving Throw', 'formula' : 'd20 + %intelligence_saving_throw_mod%' },
+			'Wisdom Save': { 'name' : 'Wisdom Saving Throw', 'formula' : 'd20 + %wisdom_saving_throw_mod%' },
+			'Charisma Save': { 'name' : 'Charisma Saving Throw', 'formula' : 'd20 + %charisma_saving_throw_mod%' },
+//			'Fortitude Save': { 'name' : 'Fortitude Saving Throw', 'formula' : 'd20 + %fortitude_saving_throw_mod%' },
+//			'Reflex Save': { 'name' : 'Reflex Saving Throw', 'formula' : 'd20 + %reflex_saving_throw_mod%' },
+//			'Will Save': { 'name' : 'Will Saving Throw', 'formula' : 'd20 + %will_saving_throw_mod%' },
+			'Strength Check': { 'name' : 'Strength Check', 'formula' : 'd20 + %strength_check_mod_formula%' },
+			'Dexterity Check': { 'name' : 'Dexterity Check', 'formula' : 'd20 + %dexterity_check_mod_formula%' },
+			'Constitution Check': { 'name' : 'Constitution Check', 'formula' : 'd20 + %constitution_check_mod_formula%' },
+			'Intelligence Check': { 'name' : 'Intelligence Check', 'formula' : 'd20 + %intelligence_check_mod_formula%' },
+			'Wisdom Check': { 'name' : 'Wisdom Check', 'formula' : 'd20 + %wisdom_check_mod_formula%' },
+			'Charisma Check': { 'name' : 'Charisma Check', 'formula' : 'd20 + %charisma_check_mod_formula%' },
+			'Acrobatics': { 'name' : 'Dexterity (Acrobatics) Check', 'formula' : 'd20 + %repeating_skill_$0_formula%' },
+			'Animal Handling': { 'name' : 'Wisdom (Animal Handling) Check', 'formula' : 'd20 + %repeating_skill_$1_formula%' },
+			'Arcana': { 'name' : 'Intelligence (Arcana) Check', 'formula' : 'd20 + %repeating_skill_$2_formula%' },
+			'Athletics': { 'name' : 'Strength (Athletics) Check', 'formula' : 'd20 + %repeating_skill_$3_formula%' },
+			'Deception': { 'name' : 'Charisma (Deception) Check', 'formula' : 'd20 + %repeating_skill_$4_formula%' },
+			'History': { 'name' : 'Intelligence (History) Check', 'formula' : 'd20 + %repeating_skill_$5_formula%' },
+			'Insight': { 'name' : 'Wisdom (Insight) Check', 'formula' : 'd20 + %repeating_skill_$6_formula%' },
+			'Intimidation': { 'name' : 'Charisma (Intimidation) Check', 'formula' : 'd20 + %repeating_skill_$7_formula%' },
+			'Investigation': { 'name' : 'Intelligence (Investigation) Check', 'formula' : 'd20 + %repeating_skill_$8_formula%' },
+			'Medicine': { 'name' : 'Wisdom (Medicine) Check', 'formula' : 'd20 + %repeating_skill_$9_formula%' },
+			'Nature': { 'name' : 'Intelligence (Nature) Check', 'formula' : 'd20 + %repeating_skill_$10_formula%' },
+			'Perception': { 'name' : 'Wisdom (Perception) Check', 'formula' : 'd20 + %repeating_skill_$11_formula%' },
+			'Performance': { 'name' : 'Charisma (Performance) Check', 'formula' : 'd20 + %repeating_skill_$12_formula%' },
+			'Persuasion': { 'name' : 'Charisma (Persuasion) Check', 'formula' : 'd20 + %repeating_skill_$13_formula%' },
+			'Religion': { 'name' : 'Intelligence (Religion) Check', 'formula' : 'd20 + %repeating_skill_$14_formula%' },
+			'Sleight of Hand': { 'name' : 'Dexterity (Sleight of Hand) Check', 'formula' : 'd20 + %repeating_skill_$15_formula%' },
+			'Stealth': { 'name' : 'Dexterity (Stealth) Check', 'formula' : 'd20 + %repeating_skill_$16_formula%' },
+			'Survival': { 'name' : 'Wisdom (Survival) Check', 'formula' : 'd20 + %repeating_skill_$17_formula%' },
+			'AC' : { 'name' : 'Armor Class', 'formula' : '0d0 + %AC%'}
 		},
 		'Pathfinder' : {
-			'Fortitude Save': { 'name' : 'Fortitude Saving Throw', 'mod' : ['Fort'] },
-			'Reflex Save': { 'name' : 'Reflex Saving Throw', 'mod' : ['Ref'] },
-			'Will Save': { 'name' : 'Will Saving Throw', 'mod' : ['Will'] },
-			'Strength Check': { 'name' : 'Strength Check', 'mod' : ['STR-mod','checks-cond'] },
-			'Dexterity Check': { 'name' : 'Dexterity Check', 'mod' : ['DEX-mod','checks-cond'] },
-			'Constitution Check': { 'name' : 'Constitution Check', 'mod' : ['CON-mod','checks-cond'] },
-			'Intelligence Check': { 'name' : 'Intelligence Check', 'mod' : ['INT-mod','checks-cond'] },
-			'Wisdom Check': { 'name' : 'Wisdom Check', 'mod' : ['WIS-mod','checks-cond'] },
-			'Charisma Check': { 'name' : 'Charisma Check', 'mod' : ['CHA-mod','checks-cond'] },
-			'Perception': { 'name' : 'Perception Check', 'mod' : ['Perception']},
-			'Stealth' : { 'name' : 'Stealth Check', 'mod' : ['Stealth']},
-			'AC' : { 'name' : 'Armor Class', 'mod' : ['AC'], 'die' : '0d0'}
+			'Fortitude Save': { 'name' : 'Fortitude Saving Throw', 'formula' : 'd20 + %Fort%' },
+			'Reflex Save': { 'name' : 'Reflex Saving Throw', 'formula' : 'd20 + %Ref%' },
+			'Will Save': { 'name' : 'Will Saving Throw', 'formula' : 'd20 + %Will%' },
+			'Strength Check': { 'name' : 'Strength Check', 'formula' : 'd20 + %STR-mod% + %checks-cond%' },
+			'Dexterity Check': { 'name' : 'Dexterity Check', 'formula' : 'd20 + %DEX-mod% + %checks-cond%' },
+			'Constitution Check': { 'name' : 'Constitution Check', 'formula' : 'd20 + %CON-mod% + %checks-cond%' },
+			'Intelligence Check': { 'name' : 'Intelligence Check', 'formula' : 'd20 + %INT-mod% + %checks-cond%' },
+			'Wisdom Check': { 'name' : 'Wisdom Check', 'formula' : 'd20 + %WIS-mod% + %checks-cond%' },
+			'Charisma Check': { 'name' : 'Charisma Check', 'formula' : 'd20 + %CHA-mod% + %checks-cond%' },
+			'Perception': { 'name' : 'Perception Check', 'formula' : 'd20 + %Perception%'},
+			'Stealth' : { 'name' : 'Stealth Check', 'formula' : 'd20 + %Stealth%'},
+			'AC' : { 'name' : 'Armor Class', 'formula' : '0d0+ %AC%'}
 		},
 		'5E-OGL' : {
-			'Strength Save': { 'name' : 'Strength Saving Throw', 'mod' : ['strength_save_bonus','globalsavemod'] },
-			'Dexterity Save': { 'name' : 'Dexterity Saving Throw', 'mod' : ['dexterity_save_bonus','globalsavemod'] },
-			'Constitution Save': { 'name' : 'Constitution Saving Throw', 'mod' : ['constitution_save_bonus','globalsavemod'] },
-			'Intelligence Save': { 'name' : 'Intelligence Saving Throw', 'mod' : ['intelligence_save_bonus','globalsavemod'] },
-			'Wisdom Save': { 'name' : 'Wisdom Saving Throw', 'mod' : ['wisdom_save_bonus','globalsavemod'] },
-			'Charisma Save': { 'name' : 'Charisma Saving Throw', 'mod' : ['charisma_save_bonus','globalsavemod'] },
-			'Strength Check': { 'name' : 'Strength Check', 'mod' : ['strength_mod'] },
-			'Dexterity Check': { 'name' : 'Dexterity Check', 'mod' : ['dexterity_mod'] },
-			'Constitution Check': { 'name' : 'Constitution Check', 'mod' : ['constitution_mod'] },
-			'Intelligence Check': { 'name' : 'Intelligence Check', 'mod' : ['intelligence_mod'] },
-			'Wisdom Check': { 'name' : 'Wisdom Check', 'mod' : ['wisdom_mod'] },
-			'Charisma Check': { 'name' : 'Charisma Check', 'mod' : ['charisma_mod'] },
-			'Acrobatics': { 'name' : 'Dexterity (Acrobatics) Check', 'mod' : ['acrobatics_bonus'] },
-			'Animal Handling': { 'name' : 'Wisdom (Animal Handling) Check', 'mod' : ['animal_handling_bonus'] },
-			'Arcana': { 'name' : 'Intelligence (Arcana) Check', 'mod' : ['arcana_bonus'] },
-			'Athletics': { 'name' : 'Strength (Athletics) Check', 'mod' : ['athletics_bonus'] },
-			'Deception': { 'name' : 'Charisma (Deception) Check', 'mod' : ['deception_bonus'] },
-			'History': { 'name' : 'Intelligence (History) Check', 'mod' : ['history_bonus'] },
-			'Insight': { 'name' : 'Wisdom (Insight) Check', 'mod' : ['insight_bonus'] },
-			'Intimidation': { 'name' : 'Charisma (Intimidation) Check', 'mod' : ['intimidation_bonus'] },
-			'Investigation': { 'name' : 'Intelligence (Investigation) Check', 'mod' : ['investigation_bonus'] },
-			'Medicine': { 'name' : 'Wisdom (Medicine) Check', 'mod' : ['medicine_bonus'] },
-			'Nature': { 'name' : 'Intelligence (Nature) Check', 'mod' : ['nature_bonus'] },
-			'Perception': { 'name' : 'Wisdom (Perception) Check', 'mod' : ['perception_bonus'] },
-			'Performance': { 'name' : 'Charisma (Performance) Check', 'mod' : ['performance_bonus'] },
-			'Persuasion': { 'name' : 'Charisma (Persuasion) Check', 'mod' : ['persuasion_bonus'] },
-			'Religion': { 'name' : 'Intelligence (Religion) Check', 'mod' : ['religion_bonus'] },
-			'Sleight of Hand': { 'name' : 'Dexterity (Sleight of Hand) Check', 'mod' : ['sleight_of_hand_bonus'] },
-			'Stealth': { 'name' : 'Dexterity (Stealth) Check', 'mod' : ['stealth_bonus'] },
-			'Survival': { 'name' : 'Wisdom (Survival) Check', 'mod' : ['survival_bonus'] },
-			'AC' : { 'name' : 'Armor Class', 'mod' : ['AC'], 'die' : '0d0'}
+			'Strength Save': { 'name' : 'Strength Saving Throw', 'formula' : 'd20 + %strength_save_bonus% + %globalsavemod%' },
+			'Dexterity Save': { 'name' : 'Dexterity Saving Throw', 'formula' : 'd20 + %dexterity_save_bonus% + %globalsavemod%' },
+			'Constitution Save': { 'name' : 'Constitution Saving Throw', 'formula' : 'd20 + %constitution_save_bonus% + %globalsavemod%' },
+			'Intelligence Save': { 'name' : 'Intelligence Saving Throw', 'formula' : 'd20 + %intelligence_save_bonus% + %globalsavemod%' },
+			'Wisdom Save': { 'name' : 'Wisdom Saving Throw', 'formula' : 'd20 + %wisdom_save_bonus% + %globalsavemod%' },
+			'Charisma Save': { 'name' : 'Charisma Saving Throw', 'formula' : 'd20 + %charisma_save_bonus% + %globalsavemod%' },
+			'Strength Check': { 'name' : 'Strength Check', 'formula' : 'd20 + %strength_mod%' },
+			'Dexterity Check': { 'name' : 'Dexterity Check', 'formula' : 'd20 + %dexterity_mod%' },
+			'Constitution Check': { 'name' : 'Constitution Check', 'formula' : 'd20 + %constitution_mod%' },
+			'Intelligence Check': { 'name' : 'Intelligence Check', 'formula' : 'd20 + %intelligence_mod%' },
+			'Wisdom Check': { 'name' : 'Wisdom Check', 'formula' : 'd20 + %wisdom_mod%' },
+			'Charisma Check': { 'name' : 'Charisma Check', 'formula' : 'd20 + %charisma_mod%' },
+			'Acrobatics': { 'name' : 'Dexterity (Acrobatics) Check', 'formula' : 'd20 + %acrobatics_bonus%' },
+			'Animal Handling': { 'name' : 'Wisdom (Animal Handling) Check', 'formula' : 'd20 + %animal_handling_bonus%' },
+			'Arcana': { 'name' : 'Intelligence (Arcana) Check', 'formula' : 'd20 + %arcana_bonus%' },
+			'Athletics': { 'name' : 'Strength (Athletics) Check', 'formula' : 'd20 + %athletics_bonus%' },
+			'Deception': { 'name' : 'Charisma (Deception) Check', 'formula' : 'd20 + %deception_bonus%' },
+			'History': { 'name' : 'Intelligence (History) Check', 'formula' : 'd20 + %history_bonus%' },
+			'Insight': { 'name' : 'Wisdom (Insight) Check', 'formula' : 'd20 + %insight_bonus%' },
+			'Intimidation': { 'name' : 'Charisma (Intimidation) Check', 'formula' : 'd20 + %intimidation_bonus%' },
+			'Investigation': { 'name' : 'Intelligence (Investigation) Check', 'formula' : 'd20 + %investigation_bonus%' },
+			'Medicine': { 'name' : 'Wisdom (Medicine) Check', 'formula' : 'd20 + %medicine_bonus%' },
+			'Nature': { 'name' : 'Intelligence (Nature) Check', 'formula' : 'd20 + %nature_bonus%' },
+			'Perception': { 'name' : 'Wisdom (Perception) Check', 'formula' : 'd20 + %perception_bonus%' },
+			'Performance': { 'name' : 'Charisma (Performance) Check', 'formula' : 'd20 + %performance_bonus%' },
+			'Persuasion': { 'name' : 'Charisma (Persuasion) Check', 'formula' : 'd20 + %persuasion_bonus%' },
+			'Religion': { 'name' : 'Intelligence (Religion) Check', 'formula' : 'd20 + %religion_bonus%' },
+			'Sleight of Hand': { 'name' : 'Dexterity (Sleight of Hand) Check', 'formula' : 'd20 + %sleight_of_hand_bonus%' },
+			'Stealth': { 'name' : 'Dexterity (Stealth) Check', 'formula' : 'd20 + %stealth_bonus%' },
+			'Survival': { 'name' : 'Wisdom (Survival) Check', 'formula' : 'd20 + %survival_bonus%' },
+			'AC' : { 'name' : 'Armor Class', 'formula' : '0d0 + %AC%' }
 		},
 		'3.5' : {
-			'Fortitude Save': { 'name' : 'Fortitude Saving Throw', 'mod' : ['fortitude'] },
-			'Reflex Save': { 'name' : 'Reflex Saving Throw', 'mod' : ['reflex'] },
-			'Will Save': { 'name' : 'Will Saving Throw', 'mod' : ['wisdom'] },
-			'Strength Check': { 'name' : 'Strength Check', 'mod' : ['str-mod'] },
-			'Dexterity Check': { 'name' : 'Dexterity Check', 'mod' : ['dex-mod'] },
-			'Constitution Check': { 'name' : 'Constitution Check', 'mod' : ['con-mod'] },
-			'Intelligence Check': { 'name' : 'Intelligence Check', 'mod' : ['int-mod'] },
-			'Wisdom Check': { 'name' : 'Wisdom Check', 'mod' : ['wis-mod'] },
-			'Charisma Check': { 'name' : 'Charisma Check', 'mod' : ['cha-mod'] },
-			'Hide' : { 'name' : 'Hide Check', 'mod' : ['hide']},
-			'Listen': { 'name' : 'Listen Check', 'mod' : ['listen']},
-			'Move Silently' : { 'name' : 'Move Silently Check', 'mod' : ['movesilent']},
-			'Spot': { 'name' : 'Spot Check', 'mod' : ['spot']},
-			'AC' : { 'name' : 'Armor Class', 'mod' : ['armorclass'], 'die' : '0d0'}
+			'Fortitude Save': { 'name' : 'Fortitude Saving Throw', 'formula' : 'd20 + %fortitude%' },
+			'Reflex Save': { 'name' : 'Reflex Saving Throw', 'formula' : 'd20 + %reflex%' },
+			'Will Save': { 'name' : 'Will Saving Throw', 'formula' : 'd20 + %wisdom%' },
+			'Strength Check': { 'name' : 'Strength Check', 'formula' : 'd20 + %str-mod%' },
+			'Dexterity Check': { 'name' : 'Dexterity Check', 'formula' : 'd20 + %dex-mod%' },
+			'Constitution Check': { 'name' : 'Constitution Check', 'formula' : 'd20 + %con-mod%' },
+			'Intelligence Check': { 'name' : 'Intelligence Check', 'formula' : 'd20 + %int-mod%' },
+			'Wisdom Check': { 'name' : 'Wisdom Check', 'formula' : 'd20 + %wis-mod%' },
+			'Charisma Check': { 'name' : 'Charisma Check', 'formula' : 'd20 + %cha-mod%' },
+			'Hide' : { 'name' : 'Hide Check', 'formula' : 'd20 + %hide%' },
+			'Listen': { 'name' : 'Listen Check', 'formula' : 'd20 + %listen%' },
+			'Move Silently' : { 'name' : 'Move Silently Check', 'formula' : 'd20 + %movesilent%' },
+			'Spot': { 'name' : 'Spot Check', 'formula' : 'd20 + %spot%' },
+			'AC' : { 'name' : 'Armor Class', 'formula' : '0d0 + %armorclass%' }
 		}
 	},
 
 	defaultOptions = {
-		'die': 'd20',
 		'die_adv': '2d20kh1',
 		'die_dis': '2d20kl1',
 		'ro': 'roll1',
 		'whisper': false,
 		'usetokenname': true,
-		'hidebonus': false
+		'hideformula': false
 	},
 
 	rollOptions = ['roll1', 'roll2', 'adv', 'dis', 'rollsetting'],
@@ -121,6 +120,9 @@ var groupCheck = groupCheck || (function() {
 	checkInstall = function() {
 		if (!state.groupCheck) {
 			initializeState();
+		}
+		else if (state.groupCheck.version < stateVersion) {
+			updateState();
 		}
 		log('-=> groupCheck v'+version+' <=-');
 	},
@@ -132,6 +134,21 @@ var groupCheck = groupCheck || (function() {
 			'version' : stateVersion
 		};
 		log('-=> groupCheck initialized with default settings!<=-');
+	},
+
+	updateState = function() {
+		if (state.groupCheck.version == 1) {
+			_.each(state.groupCheck.checkList, function(check) {
+				let die = check.die || state.groupCheck.options.die;
+				check.formula = _.union([die], _.map(check.mod, str => '%'+str+'%')).join(' + ');
+				delete check.mod;
+			});
+			delete state.groupCheck.options.die;
+			state.groupCheck.options.hideformula = state.groupCheck.options.hidebonus;
+			delete state.groupCheck.options.hidebonus;
+			state.groupCheck.version = 2;
+			log('-=> groupCheck has updated to a new data format. Please make sure your list of checks has converted correctly.<=-');
+		}
 	},
 
 	// Utility functions
@@ -147,7 +164,7 @@ var groupCheck = groupCheck || (function() {
 	},
 
 	sendChatNoarchive = function(who, string) {
-		sendChat(who, string, null, {noarchive:true});
+		sendChat(who, string);
 	},
 
 	getPlayerName = function(who) {
@@ -200,7 +217,6 @@ var groupCheck = groupCheck || (function() {
 	},
 
 	getConfigTable = function() {
-		let die, name, mod;
 		let output = '<div style="border: 1px solid black; background-color: #FFFFFF; padding: 3px 3px;display:inline-block;">' +
 			'<h4>Current Options</h4><br> <table style="margin:3px;">' +
 			'<tr><td><b>Name</b></td><td><b>Value</td></b></tr>';
@@ -211,100 +227,79 @@ var groupCheck = groupCheck || (function() {
 
 		output += '<div style="border: 1px solid black; background-color: #FFFFFF; padding: 3px 3px;display:inline-block;">' +
 			'<h4>Checks</h4><br> <table style="margin:3px;">' +
-			'<tr><td><b>Command</b></td><td><b>Name</td></b><td><b>Modifiers</b></td><td><b>Die</b></td></tr>';
+			'<tr><td><b>Command</b></td><td><b>Name</td></b><td><b>Formula</b></td></tr>';
 		_.each(state.groupCheck.checkList, function(value, key) {
-			name = value.name;
-			mod = value.mod.join(', ');
-			if (value.die) {
-				die = value.die;
-			} else {
-				die = '';
-			}
-			output += '<tr><td>'+key+'</td><td>'+name+'</td><td>'+mod+'</td><td>'+die+'</td></tr>';
+			output += '<tr><td>'+key+'</td><td>'+value.name+'</td><td>'+value.formula+'</td></tr>';
 		});
 		output += '</table></div>';
 		return output;
 	},
 
 	getRollOption = function(charid) {
-		switch(getAttrByName(charid,"roll_setting")) {
-			case "{{ignore=[[0" :
-				return 'roll1';
-				break;
-			case "adv {{ignore=[[0":
-				return 'adv';
-				break;
-			case "dis {{ignore=[[0" :
-				return 'dis';
-				break;
+		if (charid) {
+			switch(getAttrByName(charid,"roll_setting")) {
+				case "{{ignore=[[0" :
+					return 'roll1';
+					break;
+				case "adv {{ignore=[[0":
+					return 'adv';
+					break;
+				case "dis {{ignore=[[0" :
+					return 'dis';
+					break;
+			}
 		}
 		return 'roll2';
 	},
 
-	addCharacterToOutput = function(selected, checkMods, opts, rollPre, rollPost) {
-		let token, character, characterId, output = '', name, rollOption,
-			totalMod = '', dieUsed, rollAppendix = '', charName;
-		if (selected._type === 'graphic') {
-			token = getObj('graphic', selected._id);
-			characterId = token.get('represents');
-
-			if (opts.ro === 'rollsetting') {
-				if (characterId !== '') {
-					rollOption = getRollOption(characterId);
-				} else {
-					rollOption = 'roll2';
-				}
-			} else {
-				rollOption = opts.ro;
-			}
-			switch(rollOption) {
-				case 'roll2' :
-					dieUsed = opts.die;
-					break;
-				case 'adv' :
-					dieUsed = opts.die_adv;
-					rollAppendix = ' (Advantage)';
-					break;
-				case 'dis' :
-					dieUsed = opts.die_dis;
-					rollAppendix = ' (Disadvantage)';
-					break;
-				case 'roll1' :
-					dieUsed = opts.die;
-					break;
-			}
-
+	addCharacterToOutput = function(selected, checkFormula, rollOption, opts, rollBoundary) {
+		let output, displayName, computedFormula, rollAppendix = '', charName,
+			token = getObj('graphic', selected._id),
+			characterId = token.get('represents'),
+			ro = rollOption(characterId),
 			character = getObj('character', characterId);
-			if (character) {
-				charName = character.get('name');
-				if (opts.usetokenname) {
-					name = token.get('name');
-				}
-				else {
-					name = charName;
-				}
-				checkMods.forEach(function (mod) {
-					totalMod += ` + @{${charName}|${mod}}`;
-				});
-			}
-			else if (opts.fallback) {
-				name = token.get('name') || `<img src="${token.get('imgsrc')}" height="35" width="35">`;
-				totalMod = ` +(${opts.fallback}[fallback])`;
-			}
-			else {
-				return '';
-			}
 
-			if (opts.globalmod) {
-					totalMod += ` + ${opts.globalmod}[global modifier]`;
-			}
-			if (rollOption !== 'roll2') {
-					output = `<p><b>${name}:</b> ${rollPre}${dieUsed} ${totalMod}${rollPost}${rollAppendix}</p>`;
+		if (character) {
+			charName = character.get('name');
+			if (opts.usetokenname) {
+				displayName = token.get('name');
 			}
 			else {
-				output = `<p><b>${name}:</b> ${rollPre}${dieUsed} ${totalMod}${rollPost}`
-					+ ` | ${rollPre}${dieUsed} ${totalMod}${rollPost}</p>`;
+				displayName = charName;
 			}
+			computedFormula = checkFormula.replace(/\%(.*?)\%/g,
+				'@{' + charName + '|' + '$1' + '}');
+		}
+		else if (opts.fallback) {
+			displayName = token.get('name') || `<img src="${token.get('imgsrc')}" height="35" width="35">`;
+			computedFormula = checkFormula.replace(/\%(.*?)\%/,opts.fallback)
+				.replace(/\%(.*?)\%/g,'0');
+		}
+		else {
+			return '';
+		}
+
+		if (opts.globalmod) {
+				computedFormula += ` + ${opts.globalmod}[global modifier]`;
+		}
+
+		switch(ro) {
+			case 'adv' :
+				computedFormula = computedFormula.replace(/d20/,opts['die_adv']);
+				rollAppendix = ' (Advantage)';
+				break;
+			case 'dis' :
+				computedFormula = computedFormula.replace(/d20/,opts['die_dis']);
+				rollAppendix = ' (Disadvantage)';
+				break;
+		}
+
+		if (ro !== 'roll2') {
+				output = `<p><b>${displayName}:</b> ${rollBoundary[0]}${computedFormula}${rollBoundary[1]}${rollAppendix}</p>`;
+		}
+		else {
+			output = `<p><b>${displayName}:</b> ${rollBoundary[0]}${computedFormula}${rollBoundary[1]}`
+				+ ` | ${rollBoundary[0]}${computedFormula}${rollBoundary[1]}</p>`;
 		}
 		return output;
 	},
@@ -331,9 +326,9 @@ var groupCheck = groupCheck || (function() {
 
 	handleConfig = function (msg) {
 		const hasValueConfig = ['import','add','delete','set'];
-		const valueOptions = ['fallback','die','die_adv','die_dis','globalmod'];
-		const booleanOptions = ['whisper', 'usetokenname', 'hidebonus'];
-		const booleanOptionsNegative = ['public', 'usecharname', 'showbonus'];
+		const valueOptions = ['fallback','die_adv','die_dis','globalmod'];
+		const booleanOptions = ['whisper', 'usetokenname', 'hideformula'];
+		const booleanOptionsNegative = ['public', 'usecharname', 'showformula'];
 		let opts = processOpts(msg.content, hasValueConfig);
 		let who = getPlayerName(msg.who), output;
 
@@ -354,7 +349,7 @@ var groupCheck = groupCheck || (function() {
 			let data = safeReadJSON(opts.add);
 			if (_.isObject(data)) {
 				_.each(data, function (value, key) {
-					if (!(_.isObject(value) && _.has(value, 'name') && _.has(value,'mod') && _.isArray(value.mod))) {
+					if (!(_.isObject(value) && _.has(value, 'name') && _.has(value,'formula') && _.isString(value.formula))) {
 						delete data[key];
 					}
 				});
@@ -397,7 +392,7 @@ var groupCheck = groupCheck || (function() {
 			}
 			else if (_.indexOf(booleanOptionsNegative, kv[0]) !== -1) {
 				if (kv[0] === 'public') kv[0] = 'whisper';
-				if (kv[0] === 'showbonus') kv[0] = 'hidebonus';
+				if (kv[0] === 'showformula') kv[0] = 'hideformula';
 				if (kv[0] === 'usecharname') kv[0] = 'usetokenname';
 				state.groupCheck.options[kv[0]] = false;
 				output = 'Option ' + kv[0] + ' set to ' + state.groupCheck.options[kv[0]] + '.';
@@ -429,21 +424,20 @@ var groupCheck = groupCheck || (function() {
 	},
 
 	handleOutput = function (msg) {
-		const hasValue = ['fallback','custom','die','die_adv','die_dis','globalmod','ro','multi'];
-		let checkCmd, checkName, checkMods, output = '', rollPre, rollPost, numberOfTimes;
-		let who = getPlayerName(msg.who);
+		const hasValue = ['fallback','custom','die_adv','die_dis','globalmod','ro','multi'];
+		let checkCmd, checkName, checkFormula, output = '', rollBoundary;
+		let who = getPlayerName(msg.who), charOutput;
 
 		// Options processing
 		let opts = processOpts(msg.content, hasValue);
 		checkCmd = _.intersection(_.keys(state.groupCheck.checkList), _.keys(opts))[0];
 		if (checkCmd) {
-			checkMods = state.groupCheck.checkList[checkCmd].mod;
-			opts.die = opts.die || state.groupCheck.checkList[checkCmd].die;
+			checkFormula = state.groupCheck.checkList[checkCmd].formula;
 			checkName = state.groupCheck.checkList[checkCmd].name;
 		}
-		if (opts.showbonus) {
-			opts.hidebonus = false;
-			delete opts.showbonus;
+		if (opts.showformula) {
+			opts.hideformula = false;
+			delete opts.showformula;
 		}
 		if (opts.usecharname) {
 			opts.usetokenname = false;
@@ -460,22 +454,23 @@ var groupCheck = groupCheck || (function() {
 			printHelp(who);
 			return;
 		}
-		
-		numberOfTimes = (opts.multi > 1 ) ? parseInt(opts.multi):1;
-		
+
+		opts.multi = (opts.multi > 1 ) ? parseInt(opts.multi):1;
+		rollBoundary = (opts.hideformula) ? ['[[[[',']]]]'] : ['[[',']]'];
+
 		if (_.indexOf(rollOptions, opts.ro) === -1) {
 			handleError(who,'Roll option ' + opts.ro + ' is invalid, sorry.');
 			return;
 		}
 		// Handle custom modifier
 		if (opts.custom) {
-			let kv = opts.custom.split(/\s*,\s*/);
+			let kv = opts.custom.split(/,\s?/);
 			if (kv.length < 2) {
 				handleError(who,"Custom roll format invalid");
 				return;
 			}
 			checkName = kv.shift();
-			checkMods = kv;
+			checkFormula = kv.join();
 			checkCmd = true;
 		}
 
@@ -490,26 +485,32 @@ var groupCheck = groupCheck || (function() {
 			output += '/w GM ';
 		}
 
-		if (opts.hidebonus) {
-				rollPre = '[[[['; rollPost = ']]]]';
-			}
-		else {
-				rollPre = '[['; rollPost = ']]';
-		}
+		let rollOption = (opts.ro === 'rollsetting') ? getRollOption : ( (charid) => opts.ro);
 
 		output += '<div style="border: 1px solid black; background-color: #FFFFFF; padding: 3px 3px;">'
 		+ '<h3>'+ checkName +'</h3>'+'<br>';
+
 		if (msg.selected) {
 			msg.selected.forEach(function(obj) {
-					let charOutput = addCharacterToOutput(obj, checkMods, opts, rollPre, rollPost);
-					for (let i=0; i < numberOfTimes; i++) {
+				if (obj._type === 'graphic') {
+					charOutput = addCharacterToOutput(obj, checkFormula, rollOption, opts, rollBoundary);
+					for (let i=0; i < opts.multi; i++) {
 						output += charOutput;
 					}
+				}
 			});
 		}
 
 		output += '</div>';
-		sendChat(who, output);
+		try {
+			sendChat(who, output);
+		}
+		catch(err) {
+			output = 'Something went wrong with the roll. The command you tried was:<br>'
+				+ msg.content + '<br> The error message generated by Roll20 is:<br>'
+				+ err;
+			handleError(who, output);
+		}
 	},
 
 	handleInput = function(msg) {

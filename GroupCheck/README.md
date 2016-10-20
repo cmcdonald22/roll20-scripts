@@ -21,7 +21,8 @@ If you have two tokens selected, representing the characters **Sarah** and **Mar
 
 **Mark:** [[d20 + @{Mark|dexterity\_saving\_throw\_mod}]]
 
-Internally, any check must be of the form **die + (list of modifiers)**, where the modifiers are some characer attributes. Unfortunately, systems that handle dice rolls in other ways - e.g. dice pool systems - are currently not supported.
+Internally, the form of the check is proscribed by a formula; the formula in this case is of the form "d20 + %dexterity\_saving\_throw\_mod%", and the script will fill in the right attributes in place of "%dexterity\_saving\_throw\_mod%.
+
 ## Configuration
 The script is designed to be easily configured to your specific system's needs. You can configure the script using the **!group-check-config** command. **!group-check-config** accepts the following options:
 
@@ -34,8 +35,8 @@ The script is designed to be easily configured to your specific system's needs. 
 
 * **!group-check-config --add [JSON]**  adds a check, or several checks, to the list of checks in the database. **[JSON]** must be valid JSON in the following format: 
 
-		{ "Check Command" : { "name" : "Check Name", "mod" : ["mod1","mod2", ..., "modn"]}}
-Optionally, a "die" key may be added in addition to "name" and "mod" to specify that a custom die should be used for this check, overriding the default die. The array under "mod" is a list of attribute names: they will all be added together to determine the final bonus.
+		{ "Check Command" : { "name" : "Check Name", "formula" : "FORMULA"}}
+Here, the command will be called by **!group-check --Check Command**, the title of the box appearing in chat will be Check Name, and FORMULA is the formula used to calculate the roll result. Attributes to be filled in in FORMULA need to be specified as %name%.
 
 * **!group-check-config --delete [Command]** will delete the check called **Command** from the database.
 
@@ -43,9 +44,9 @@ Optionally, a "die" key may be added in addition to "name" and "mod" to specify 
 
 ### Manipulating default options
 
-* **!group-check-config --set option value** will set **option** to **value**. The following options are available: **ro**, **die**, **die_adv**, **die_dis**, **fallback**, and **globalmod**. To find out more about what these options do, consult the Options sections.
+* **!group-check-config --set option value** will set **option** to **value**. The following options are available: **ro**, **die_adv**, **die_dis**, **fallback**, and **globalmod**. To find out more about what these options do, consult the Options sections.
 
-* **!group-check-config --set option** will set **option** (this is the variant for options which can be either true or false. The following options are available: **showbonus**, **hidebonus**, **whisper**, **public**, **usecharname**, and **usetokenname**. To find out more about what these options do, consult the Options sections.
+* **!group-check-config --set option** will set **option** (this is the variant for options which can be either true or false. The following options are available: **showformula**, **hideformula**, **whisper**, **public**, **usecharname**, and **usetokenname**. To find out more about what these options do, consult the Options sections.
 
 * **!group-check-config --defaults** will reset all options to the factory defaults.
 
@@ -54,18 +55,18 @@ Most of the following options can be supplied in two ways: you can either supply
 
 ### List of options
 
-* The options **die**, **die_adv**, and **die_dis** control the basic dice used for normal rolling, disadvantage, and advantage. Supplying the option **--die [dieSize]** will use **[dieSize]** instead the default die for this roll only, and correspondingly for **die_adv** or **die_dis**.
+* The options **die_adv**, and **die_dis** control the die substitution for disadvantage and advantage. The first d20 in the roll formula will be replaced by the value of die\_adv resp. die\_dis if the roll option adv for Advantage or dis for Disadvantage is specified. 
 
 * The options **whisper**, resp. **public**, control if rolls are whispered to the GM or output publicly.
 
 * The option **usecharname**, resp. **usetokenname**, control if the name of the token or the name of the character is displayed in front of the roll result. You can use e.g. the TokenNameNumber script to give different tokens for the same character different (numbered) names, allowing you to discern which of the tokens rolled which roll, even if there are several tokens representing the same character. This is active by default.
 
-* It is possible to alter the specific way rolls are made. There are 5 options: roll normally, roll with advantage, roll with disadvantage, always roll 2 times for every token, or (for the 5E shaped sheet only) respect the roll setting on the sheet for selected tokens. You can control this via the option **--ro [Setting]**, where **[Setting]** can be one of roll1, roll2, adv, dis, rollsetting, respectively.
+* It is possible to alter the specific way rolls are made. There are 5 options: roll normally, roll with advantage, roll with disadvantage, always roll 2 times for every token, or (for the 5E shaped sheet only) respect the roll setting on the sheet for selected tokens. You can control this via the option **--ro [Setting]**, where **[Setting]** can be one of roll1, roll2, adv, dis, rollsetting, respectively. If you are not using D&D 5th Edition, you probably want to leave this option on roll1 constantly.
 
 * The option **--globalmod [mod]** will add **[mod]** as a modifier to all rolls made. Here **[mod]** can be any expression that the roll20 dice roller can interpret, such as a number, a die roll, a specific character's attribute, or a sum of these things.
 
-* It is possible to hide the bonus on rolls and only show the final result of the roll. This is controlled via the options **--showbonus** and **--hidebonus**.
+* It is possible to hide the formula for checks and only show the final result of the roll. This is controlled via the options **--showformula** and **--hideformula**.
 
-* You can supply a fallback value. When the option **--fallback [value]** is given, a roll will be made even for tokens not linked to a character; for these tokens, **[value]** is used instead of a character's attribute as modifier to the roll. **[value]** may be any expression that the roll20 dice roller can interpret, such as a number, a die roll, a specific character's attribute, or a sum of these things. If also using **--globalmod**, the global modifier is applied in addition to the fallback mod.
+* You can supply a fallback value. When the option **--fallback [value]** is given, a roll will be made even for tokens not linked to a character; for these tokens, **[value]** will be used instead of the FIRST attribute in a roll, and all other attributes are treated as if they were 0. **[value]** may be any expression that the roll20 dice roller can interpret, such as a number, a die roll, a specific character's attribute, or a sum of these things. If also using **--globalmod**, the global modifier is applied in addition to the fallback mod.
 
-* It is possible to supply a custom roll not present in the checks database. The syntax to do this is **--custom CheckName, mod\_1, ..., mod\_n**. This will roll a check with title **CheckName** and modifiers **mod\_1**, **mod\_2**, and so on.
+* It is possible to supply a custom roll not present in the checks database. The syntax to do this is **--custom CheckName, formula**. This will roll a check with title **CheckName** and formula **formula** for the roll.
