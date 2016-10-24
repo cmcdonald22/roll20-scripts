@@ -1,6 +1,15 @@
 var groupCheck = groupCheck || (function() {
     'use strict';
-    const version = '0.8', stateVersion = 2,
+    const version = '0.8.1', stateVersion = 2,
+    // Configure roll appearance
+    boxstyle = (header,content) => '<div style="border: 1px solid black; background-color: #FFFFFF; padding: 3px 3px;">'
+    	+ header + '<p>' + content +'</p></div>',
+    tablestyle = content => '<table style="padding: 3px; border-collapse: separate; width: 100%">'+content+'</table>',
+    headerstyle = text => '<h3><div style="text-align:center">'+text+'</div></h3>',
+    rowstyle = (name, roll) => '<tr style="padding 2px;">'+name+roll+'</tr>',
+    namestyle = name => '<td style="padding: 2px; border-bottom: 1px solid #ddd"><b>'+name+'</b></td>',
+    rollstyle = (formula, boundary, appendix) => '<td style="text-align:center; padding: 2px; border-bottom: 1px solid #ddd">'+boundary[0]+formula+boundary[1]+appendix+'</td>',
+    roll2style = (f,b,a) => rollstyle(f,b,a) + rollstyle(f,b,a),
 
 	// Data variables
 	importData = {
@@ -267,13 +276,13 @@ var groupCheck = groupCheck || (function() {
 			else {
 				displayName = charName;
 			}
-			computedFormula = checkFormula.replace(/\%(.*?)\%/g,
+			computedFormula = checkFormula.replace(/\%(\S.*?)\%/g,
 				'@{' + charName + '|' + '$1' + '}');
 		}
 		else if (opts.fallback) {
 			displayName = token.get('name') || `<img src="${token.get('imgsrc')}" height="35" width="35">`;
-			computedFormula = checkFormula.replace(/\%(.*?)\%/,opts.fallback)
-				.replace(/\%(.*?)\%/g,'0');
+			computedFormula = checkFormula.replace(/\%(\S.*?)\%/,opts.fallback)
+				.replace(/\%(\S.*?)\%/g,'0');
 		}
 		else {
 			return '';
@@ -295,11 +304,12 @@ var groupCheck = groupCheck || (function() {
 		}
 
 		if (ro !== 'roll2') {
-				output = `<p><b>${displayName}:</b> ${rollBoundary[0]}${computedFormula}${rollBoundary[1]}${rollAppendix}</p>`;
+			output = rowstyle(namestyle(displayName),
+				rollstyle(computedFormula,rollBoundary,rollAppendix));
 		}
 		else {
-			output = `<p><b>${displayName}:</b> ${rollBoundary[0]}${computedFormula}${rollBoundary[1]}`
-				+ ` | ${rollBoundary[0]}${computedFormula}${rollBoundary[1]}</p>`;
+			output = rowstyle(namestyle(displayName),
+				roll2style(computedFormula,rollBoundary,rollAppendix));
 		}
 		return output;
 	},
@@ -425,8 +435,8 @@ var groupCheck = groupCheck || (function() {
 
 	handleOutput = function (msg) {
 		const hasValue = ['fallback','custom','die_adv','die_dis','globalmod','ro','multi'];
-		let checkCmd, checkName, checkFormula, output = '', rollBoundary;
-		let who = getPlayerName(msg.who), charOutput;
+		let checkCmd, checkName, checkFormula, output, rollBoundary;
+		let who = getPlayerName(msg.who), charOutput, rollText = '';
 
 		// Options processing
 		let opts = processOpts(msg.content, hasValue);
@@ -457,6 +467,9 @@ var groupCheck = groupCheck || (function() {
 
 		opts.multi = (opts.multi > 1 ) ? parseInt(opts.multi):1;
 		rollBoundary = (opts.hideformula) ? ['[[[[',']]]]'] : ['[[',']]'];
+		if (opts.noboundary) {
+			rollBoundary = ['',''];
+		}
 
 		if (_.indexOf(rollOptions, opts.ro) === -1) {
 			handleError(who,'Roll option ' + opts.ro + ' is invalid, sorry.');
@@ -481,27 +494,23 @@ var groupCheck = groupCheck || (function() {
 		}
 
 		// Output
-		if (opts.whisper) {
-			output += '/w GM ';
-		}
+		output = opts.whisper ? '/w GM ' : '';
 
 		let rollOption = (opts.ro === 'rollsetting') ? getRollOption : ( (charid) => opts.ro);
-
-		output += '<div style="border: 1px solid black; background-color: #FFFFFF; padding: 3px 3px;">'
-		+ '<h3>'+ checkName +'</h3>'+'<br>';
 
 		if (msg.selected) {
 			msg.selected.forEach(function(obj) {
 				if (obj._type === 'graphic') {
 					charOutput = addCharacterToOutput(obj, checkFormula, rollOption, opts, rollBoundary);
 					for (let i=0; i < opts.multi; i++) {
-						output += charOutput;
+						rollText += charOutput;
 					}
 				}
 			});
 		}
 
-		output += '</div>';
+		output += boxstyle(headerstyle(checkName), tablestyle(rollText));
+
 		try {
 			sendChat(who, output);
 		}
