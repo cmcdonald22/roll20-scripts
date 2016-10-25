@@ -1,116 +1,117 @@
 var groupCheck = groupCheck || (function() {
-    'use strict';
-    const version = '0.8.1', stateVersion = 2,
-    // Configure roll appearance
-    boxstyle = (header,content) => '<div style="border: 1px solid black; background-color: #FFFFFF; padding: 3px 3px;">'
-    	+ header + '<p>' + content +'</p></div>',
-    tablestyle = content => '<table style="padding: 3px; border-collapse: separate; width: 100%">'+content+'</table>',
-    headerstyle = text => '<h3><div style="text-align:center">'+text+'</div></h3>',
-    rowstyle = (name, roll) => '<tr style="padding 2px;">'+name+roll+'</tr>',
-    namestyle = name => '<td style="padding: 2px; border-bottom: 1px solid #ddd"><b>'+name+'</b></td>',
-    rollstyle = (formula, boundary, appendix) => '<td style="text-align:center; padding: 2px; border-bottom: 1px solid #ddd">'+boundary[0]+formula+boundary[1]+appendix+'</td>',
-    roll2style = (f,b,a) => rollstyle(f,b,a) + rollstyle(f,b,a),
+	'use strict';
+	const version = '0.9', stateVersion = 3,
+	// Configure roll appearance
+	style = {
+		makeBox : (header,rolls) => '<div style="border: 1px solid black; background-color: #FFFFFF; padding: 3px 3px;">'	+ style.makeHeader(header) + '<p>' + style.makeRollTable(rolls) +'</p></div>',
+		makeRollTable : content => '<table style="padding: 3px; border-collapse: separate; width: 100%">'+content+'</table>',
+		makeHeader : text => '<h3><div style="text-align:center">'+text+'</div></h3>',
+		makeRow : (name, rollStyle, formula, boundary, appendix) => '<tr style="padding 2px;">'+style.makeName(name) + rollStyle(formula,boundary,appendix) + '</tr>',
+		makeName : name => '<td style="padding: 2px; border-bottom: 1px solid #ddd"><b>'+name+'</b></td>',
+		makeRoll : (formula, boundary, appendix) => '<td style="text-align:center; padding: 2px; border-bottom: 1px solid #ddd">' + boundary[0] + formula + boundary[1] + appendix + '</td>',
+		makeRoll2 : (f,b,a) => style.makeRoll(f,b,a) + style.makeRoll(f,b,a)
+	},
 
 	// Data variables
 	importData = {
 		'5E-Shaped' : {
-			'Strength Save': { 'name' : 'Strength Saving Throw', 'formula' : 'd20 + %strength_saving_throw_mod%' },
-			'Dexterity Save': { 'name' : 'Dexterity Saving Throw', 'formula' : 'd20 + %dexterity_saving_throw_mod%' },
-			'Constitution Save': { 'name' : 'Constitution Saving Throw', 'formula' : 'd20 + %constitution_saving_throw_mod%' },
-			'Intelligence Save': { 'name' : 'Intelligence Saving Throw', 'formula' : 'd20 + %intelligence_saving_throw_mod%' },
-			'Wisdom Save': { 'name' : 'Wisdom Saving Throw', 'formula' : 'd20 + %wisdom_saving_throw_mod%' },
-			'Charisma Save': { 'name' : 'Charisma Saving Throw', 'formula' : 'd20 + %charisma_saving_throw_mod%' },
-//			'Fortitude Save': { 'name' : 'Fortitude Saving Throw', 'formula' : 'd20 + %fortitude_saving_throw_mod%' },
-//			'Reflex Save': { 'name' : 'Reflex Saving Throw', 'formula' : 'd20 + %reflex_saving_throw_mod%' },
-//			'Will Save': { 'name' : 'Will Saving Throw', 'formula' : 'd20 + %will_saving_throw_mod%' },
-			'Strength Check': { 'name' : 'Strength Check', 'formula' : 'd20 + %strength_check_mod_formula%' },
-			'Dexterity Check': { 'name' : 'Dexterity Check', 'formula' : 'd20 + %dexterity_check_mod_formula%' },
-			'Constitution Check': { 'name' : 'Constitution Check', 'formula' : 'd20 + %constitution_check_mod_formula%' },
-			'Intelligence Check': { 'name' : 'Intelligence Check', 'formula' : 'd20 + %intelligence_check_mod_formula%' },
-			'Wisdom Check': { 'name' : 'Wisdom Check', 'formula' : 'd20 + %wisdom_check_mod_formula%' },
-			'Charisma Check': { 'name' : 'Charisma Check', 'formula' : 'd20 + %charisma_check_mod_formula%' },
-			'Acrobatics': { 'name' : 'Dexterity (Acrobatics) Check', 'formula' : 'd20 + %repeating_skill_$0_formula%' },
-			'Animal Handling': { 'name' : 'Wisdom (Animal Handling) Check', 'formula' : 'd20 + %repeating_skill_$1_formula%' },
-			'Arcana': { 'name' : 'Intelligence (Arcana) Check', 'formula' : 'd20 + %repeating_skill_$2_formula%' },
-			'Athletics': { 'name' : 'Strength (Athletics) Check', 'formula' : 'd20 + %repeating_skill_$3_formula%' },
-			'Deception': { 'name' : 'Charisma (Deception) Check', 'formula' : 'd20 + %repeating_skill_$4_formula%' },
-			'History': { 'name' : 'Intelligence (History) Check', 'formula' : 'd20 + %repeating_skill_$5_formula%' },
-			'Insight': { 'name' : 'Wisdom (Insight) Check', 'formula' : 'd20 + %repeating_skill_$6_formula%' },
-			'Intimidation': { 'name' : 'Charisma (Intimidation) Check', 'formula' : 'd20 + %repeating_skill_$7_formula%' },
-			'Investigation': { 'name' : 'Intelligence (Investigation) Check', 'formula' : 'd20 + %repeating_skill_$8_formula%' },
-			'Medicine': { 'name' : 'Wisdom (Medicine) Check', 'formula' : 'd20 + %repeating_skill_$9_formula%' },
-			'Nature': { 'name' : 'Intelligence (Nature) Check', 'formula' : 'd20 + %repeating_skill_$10_formula%' },
-			'Perception': { 'name' : 'Wisdom (Perception) Check', 'formula' : 'd20 + %repeating_skill_$11_formula%' },
-			'Performance': { 'name' : 'Charisma (Performance) Check', 'formula' : 'd20 + %repeating_skill_$12_formula%' },
-			'Persuasion': { 'name' : 'Charisma (Persuasion) Check', 'formula' : 'd20 + %repeating_skill_$13_formula%' },
-			'Religion': { 'name' : 'Intelligence (Religion) Check', 'formula' : 'd20 + %repeating_skill_$14_formula%' },
-			'Sleight of Hand': { 'name' : 'Dexterity (Sleight of Hand) Check', 'formula' : 'd20 + %repeating_skill_$15_formula%' },
-			'Stealth': { 'name' : 'Dexterity (Stealth) Check', 'formula' : 'd20 + %repeating_skill_$16_formula%' },
-			'Survival': { 'name' : 'Wisdom (Survival) Check', 'formula' : 'd20 + %repeating_skill_$17_formula%' },
-			'AC' : { 'name' : 'Armor Class', 'formula' : '0d0 + %AC%'}
+			'Strength Save': { 'name' : 'Strength Saving Throw', 'formula' : '[[d20 + %strength_saving_throw_mod%]]' },
+			'Dexterity Save': { 'name' : 'Dexterity Saving Throw', 'formula' : '[[d20 + %dexterity_saving_throw_mod%]]' },
+			'Constitution Save': { 'name' : 'Constitution Saving Throw', 'formula' : '[[d20 + %constitution_saving_throw_mod%]]' },
+			'Intelligence Save': { 'name' : 'Intelligence Saving Throw', 'formula' : '[[d20 + %intelligence_saving_throw_mod%]]' },
+			'Wisdom Save': { 'name' : 'Wisdom Saving Throw', 'formula' : '[[d20 + %wisdom_saving_throw_mod%]]' },
+			'Charisma Save': { 'name' : 'Charisma Saving Throw', 'formula' : '[[d20 + %charisma_saving_throw_mod%]]' },
+//			'Fortitude Save': { 'name' : 'Fortitude Saving Throw', 'formula' : '[[d20 + %fortitude_saving_throw_mod%]]' },
+//			'Reflex Save': { 'name' : 'Reflex Saving Throw', 'formula' : '[[d20 + %reflex_saving_throw_mod%]]' },
+//			'Will Save': { 'name' : 'Will Saving Throw', 'formula' : '[[d20 + %will_saving_throw_mod%]]' },
+			'Strength Check': { 'name' : 'Strength Check', 'formula' : '[[d20 + %strength_check_mod_formula%]]' },
+			'Dexterity Check': { 'name' : 'Dexterity Check', 'formula' : '[[d20 + %dexterity_check_mod_formula%]]' },
+			'Constitution Check': { 'name' : 'Constitution Check', 'formula' : '[[d20 + %constitution_check_mod_formula%]]' },
+			'Intelligence Check': { 'name' : 'Intelligence Check', 'formula' : '[[d20 + %intelligence_check_mod_formula%]]' },
+			'Wisdom Check': { 'name' : 'Wisdom Check', 'formula' : '[[d20 + %wisdom_check_mod_formula%]]' },
+			'Charisma Check': { 'name' : 'Charisma Check', 'formula' : '[[d20 + %charisma_check_mod_formula%]]' },
+			'Acrobatics': { 'name' : 'Dexterity (Acrobatics) Check', 'formula' : '[[d20 + %repeating_skill_$0_formula%]]' },
+			'Animal Handling': { 'name' : 'Wisdom (Animal Handling) Check', 'formula' : '[[d20 + %repeating_skill_$1_formula%]]' },
+			'Arcana': { 'name' : 'Intelligence (Arcana) Check', 'formula' : '[[d20 + %repeating_skill_$2_formula%]]' },
+			'Athletics': { 'name' : 'Strength (Athletics) Check', 'formula' : '[[d20 + %repeating_skill_$3_formula%]]' },
+			'Deception': { 'name' : 'Charisma (Deception) Check', 'formula' : '[[d20 + %repeating_skill_$4_formula%]]' },
+			'History': { 'name' : 'Intelligence (History) Check', 'formula' : '[[d20 + %repeating_skill_$5_formula%]]' },
+			'Insight': { 'name' : 'Wisdom (Insight) Check', 'formula' : '[[d20 + %repeating_skill_$6_formula%]]' },
+			'Intimidation': { 'name' : 'Charisma (Intimidation) Check', 'formula' : '[[d20 + %repeating_skill_$7_formula%]]' },
+			'Investigation': { 'name' : 'Intelligence (Investigation) Check', 'formula' : '[[d20 + %repeating_skill_$8_formula%]]' },
+			'Medicine': { 'name' : 'Wisdom (Medicine) Check', 'formula' : '[[d20 + %repeating_skill_$9_formula%]]' },
+			'Nature': { 'name' : 'Intelligence (Nature) Check', 'formula' : '[[d20 + %repeating_skill_$10_formula%]]' },
+			'Perception': { 'name' : 'Wisdom (Perception) Check', 'formula' : '[[d20 + %repeating_skill_$11_formula%]]' },
+			'Performance': { 'name' : 'Charisma (Performance) Check', 'formula' : '[[d20 + %repeating_skill_$12_formula%]]' },
+			'Persuasion': { 'name' : 'Charisma (Persuasion) Check', 'formula' : '[[d20 + %repeating_skill_$13_formula%]]' },
+			'Religion': { 'name' : 'Intelligence (Religion) Check', 'formula' : '[[d20 + %repeating_skill_$14_formula%]]' },
+			'Sleight of Hand': { 'name' : 'Dexterity (Sleight of Hand) Check', 'formula' : '[[d20 + %repeating_skill_$15_formula%]]' },
+			'Stealth': { 'name' : 'Dexterity (Stealth) Check', 'formula' : '[[d20 + %repeating_skill_$16_formula%]]' },
+			'Survival': { 'name' : 'Wisdom (Survival) Check', 'formula' : '[[d20 + %repeating_skill_$17_formula%]]' },
+			'AC' : { 'name' : 'Armor Class', 'formula' : '%AC%'}
 		},
 		'Pathfinder' : {
-			'Fortitude Save': { 'name' : 'Fortitude Saving Throw', 'formula' : 'd20 + %Fort%' },
-			'Reflex Save': { 'name' : 'Reflex Saving Throw', 'formula' : 'd20 + %Ref%' },
-			'Will Save': { 'name' : 'Will Saving Throw', 'formula' : 'd20 + %Will%' },
-			'Strength Check': { 'name' : 'Strength Check', 'formula' : 'd20 + %STR-mod% + %checks-cond%' },
-			'Dexterity Check': { 'name' : 'Dexterity Check', 'formula' : 'd20 + %DEX-mod% + %checks-cond%' },
-			'Constitution Check': { 'name' : 'Constitution Check', 'formula' : 'd20 + %CON-mod% + %checks-cond%' },
-			'Intelligence Check': { 'name' : 'Intelligence Check', 'formula' : 'd20 + %INT-mod% + %checks-cond%' },
-			'Wisdom Check': { 'name' : 'Wisdom Check', 'formula' : 'd20 + %WIS-mod% + %checks-cond%' },
-			'Charisma Check': { 'name' : 'Charisma Check', 'formula' : 'd20 + %CHA-mod% + %checks-cond%' },
-			'Perception': { 'name' : 'Perception Check', 'formula' : 'd20 + %Perception%'},
-			'Stealth' : { 'name' : 'Stealth Check', 'formula' : 'd20 + %Stealth%'},
-			'AC' : { 'name' : 'Armor Class', 'formula' : '0d0+ %AC%'}
+			'Fortitude Save': { 'name' : 'Fortitude Saving Throw', 'formula' : '[[d20 + %Fort%]]' },
+			'Reflex Save': { 'name' : 'Reflex Saving Throw', 'formula' : '[[d20 + %Ref%]]' },
+			'Will Save': { 'name' : 'Will Saving Throw', 'formula' : '[[d20 + %Will%]]' },
+			'Strength Check': { 'name' : 'Strength Check', 'formula' : '[[d20 + %STR-mod% + %checks-cond%]]' },
+			'Dexterity Check': { 'name' : 'Dexterity Check', 'formula' : '[[d20 + %DEX-mod% + %checks-cond%]]' },
+			'Constitution Check': { 'name' : 'Constitution Check', 'formula' : '[[d20 + %CON-mod% + %checks-cond%]]' },
+			'Intelligence Check': { 'name' : 'Intelligence Check', 'formula' : '[[d20 + %INT-mod% + %checks-cond%]]' },
+			'Wisdom Check': { 'name' : 'Wisdom Check', 'formula' : '[[d20 + %WIS-mod% + %checks-cond%]]' },
+			'Charisma Check': { 'name' : 'Charisma Check', 'formula' : '[[d20 + %CHA-mod% + %checks-cond%]]' },
+			'Perception': { 'name' : 'Perception Check', 'formula' : '[[d20 + %Perception%]]'},
+			'Stealth' : { 'name' : 'Stealth Check', 'formula' : '[[d20 + %Stealth%]]'},
+			'AC' : { 'name' : 'Armor Class', 'formula' : '%AC%'}
 		},
 		'5E-OGL' : {
-			'Strength Save': { 'name' : 'Strength Saving Throw', 'formula' : 'd20 + %strength_save_bonus% + %globalsavemod%' },
-			'Dexterity Save': { 'name' : 'Dexterity Saving Throw', 'formula' : 'd20 + %dexterity_save_bonus% + %globalsavemod%' },
-			'Constitution Save': { 'name' : 'Constitution Saving Throw', 'formula' : 'd20 + %constitution_save_bonus% + %globalsavemod%' },
-			'Intelligence Save': { 'name' : 'Intelligence Saving Throw', 'formula' : 'd20 + %intelligence_save_bonus% + %globalsavemod%' },
-			'Wisdom Save': { 'name' : 'Wisdom Saving Throw', 'formula' : 'd20 + %wisdom_save_bonus% + %globalsavemod%' },
-			'Charisma Save': { 'name' : 'Charisma Saving Throw', 'formula' : 'd20 + %charisma_save_bonus% + %globalsavemod%' },
-			'Strength Check': { 'name' : 'Strength Check', 'formula' : 'd20 + %strength_mod%' },
-			'Dexterity Check': { 'name' : 'Dexterity Check', 'formula' : 'd20 + %dexterity_mod%' },
-			'Constitution Check': { 'name' : 'Constitution Check', 'formula' : 'd20 + %constitution_mod%' },
-			'Intelligence Check': { 'name' : 'Intelligence Check', 'formula' : 'd20 + %intelligence_mod%' },
-			'Wisdom Check': { 'name' : 'Wisdom Check', 'formula' : 'd20 + %wisdom_mod%' },
-			'Charisma Check': { 'name' : 'Charisma Check', 'formula' : 'd20 + %charisma_mod%' },
-			'Acrobatics': { 'name' : 'Dexterity (Acrobatics) Check', 'formula' : 'd20 + %acrobatics_bonus%' },
-			'Animal Handling': { 'name' : 'Wisdom (Animal Handling) Check', 'formula' : 'd20 + %animal_handling_bonus%' },
-			'Arcana': { 'name' : 'Intelligence (Arcana) Check', 'formula' : 'd20 + %arcana_bonus%' },
-			'Athletics': { 'name' : 'Strength (Athletics) Check', 'formula' : 'd20 + %athletics_bonus%' },
-			'Deception': { 'name' : 'Charisma (Deception) Check', 'formula' : 'd20 + %deception_bonus%' },
-			'History': { 'name' : 'Intelligence (History) Check', 'formula' : 'd20 + %history_bonus%' },
-			'Insight': { 'name' : 'Wisdom (Insight) Check', 'formula' : 'd20 + %insight_bonus%' },
-			'Intimidation': { 'name' : 'Charisma (Intimidation) Check', 'formula' : 'd20 + %intimidation_bonus%' },
-			'Investigation': { 'name' : 'Intelligence (Investigation) Check', 'formula' : 'd20 + %investigation_bonus%' },
-			'Medicine': { 'name' : 'Wisdom (Medicine) Check', 'formula' : 'd20 + %medicine_bonus%' },
-			'Nature': { 'name' : 'Intelligence (Nature) Check', 'formula' : 'd20 + %nature_bonus%' },
-			'Perception': { 'name' : 'Wisdom (Perception) Check', 'formula' : 'd20 + %perception_bonus%' },
-			'Performance': { 'name' : 'Charisma (Performance) Check', 'formula' : 'd20 + %performance_bonus%' },
-			'Persuasion': { 'name' : 'Charisma (Persuasion) Check', 'formula' : 'd20 + %persuasion_bonus%' },
-			'Religion': { 'name' : 'Intelligence (Religion) Check', 'formula' : 'd20 + %religion_bonus%' },
-			'Sleight of Hand': { 'name' : 'Dexterity (Sleight of Hand) Check', 'formula' : 'd20 + %sleight_of_hand_bonus%' },
-			'Stealth': { 'name' : 'Dexterity (Stealth) Check', 'formula' : 'd20 + %stealth_bonus%' },
-			'Survival': { 'name' : 'Wisdom (Survival) Check', 'formula' : 'd20 + %survival_bonus%' },
-			'AC' : { 'name' : 'Armor Class', 'formula' : '0d0 + %AC%' }
+			'Strength Save': { 'name' : 'Strength Saving Throw', 'formula' : '[[d20 + %strength_save_bonus% + %globalsavemod%]]' },
+			'Dexterity Save': { 'name' : 'Dexterity Saving Throw', 'formula' : '[[d20 + %dexterity_save_bonus% + %globalsavemod%]]' },
+			'Constitution Save': { 'name' : 'Constitution Saving Throw', 'formula' : '[[d20 + %constitution_save_bonus% + %globalsavemod%]]' },
+			'Intelligence Save': { 'name' : 'Intelligence Saving Throw', 'formula' : '[[d20 + %intelligence_save_bonus% + %globalsavemod%]]' },
+			'Wisdom Save': { 'name' : 'Wisdom Saving Throw', 'formula' : '[[d20 + %wisdom_save_bonus% + %globalsavemod%]]' },
+			'Charisma Save': { 'name' : 'Charisma Saving Throw', 'formula' : '[[d20 + %charisma_save_bonus% + %globalsavemod%]]' },
+			'Strength Check': { 'name' : 'Strength Check', 'formula' : '[[d20 + %strength_mod%]]' },
+			'Dexterity Check': { 'name' : 'Dexterity Check', 'formula' : '[[d20 + %dexterity_mod%]]' },
+			'Constitution Check': { 'name' : 'Constitution Check', 'formula' : '[[d20 + %constitution_mod%]]' },
+			'Intelligence Check': { 'name' : 'Intelligence Check', 'formula' : '[[d20 + %intelligence_mod%]]' },
+			'Wisdom Check': { 'name' : 'Wisdom Check', 'formula' : '[[d20 + %wisdom_mod%]]' },
+			'Charisma Check': { 'name' : 'Charisma Check', 'formula' : '[[d20 + %charisma_mod%]]' },
+			'Acrobatics': { 'name' : 'Dexterity (Acrobatics) Check', 'formula' : '[[d20 + %acrobatics_bonus%]]' },
+			'Animal Handling': { 'name' : 'Wisdom (Animal Handling) Check', 'formula' : '[[d20 + %animal_handling_bonus%]]' },
+			'Arcana': { 'name' : 'Intelligence (Arcana) Check', 'formula' : '[[d20 + %arcana_bonus%]]' },
+			'Athletics': { 'name' : 'Strength (Athletics) Check', 'formula' : '[[d20 + %athletics_bonus%]]' },
+			'Deception': { 'name' : 'Charisma (Deception) Check', 'formula' : '[[d20 + %deception_bonus%]]' },
+			'History': { 'name' : 'Intelligence (History) Check', 'formula' : '[[d20 + %history_bonus%]]' },
+			'Insight': { 'name' : 'Wisdom (Insight) Check', 'formula' : '[[d20 + %insight_bonus%]]' },
+			'Intimidation': { 'name' : 'Charisma (Intimidation) Check', 'formula' : '[[d20 + %intimidation_bonus%]]' },
+			'Investigation': { 'name' : 'Intelligence (Investigation) Check', 'formula' : '[[d20 + %investigation_bonus%]]' },
+			'Medicine': { 'name' : 'Wisdom (Medicine) Check', 'formula' : '[[d20 + %medicine_bonus%]]' },
+			'Nature': { 'name' : 'Intelligence (Nature) Check', 'formula' : '[[d20 + %nature_bonus%]]' },
+			'Perception': { 'name' : 'Wisdom (Perception) Check', 'formula' : '[[d20 + %perception_bonus%]]' },
+			'Performance': { 'name' : 'Charisma (Performance) Check', 'formula' : '[[d20 + %performance_bonus%]]' },
+			'Persuasion': { 'name' : 'Charisma (Persuasion) Check', 'formula' : '[[d20 + %persuasion_bonus%]]' },
+			'Religion': { 'name' : 'Intelligence (Religion) Check', 'formula' : '[[d20 + %religion_bonus%]]' },
+			'Sleight of Hand': { 'name' : 'Dexterity (Sleight of Hand) Check', 'formula' : '[[d20 + %sleight_of_hand_bonus%]]' },
+			'Stealth': { 'name' : 'Dexterity (Stealth) Check', 'formula' : '[[d20 + %stealth_bonus%]]' },
+			'Survival': { 'name' : 'Wisdom (Survival) Check', 'formula' : '[[d20 + %survival_bonus%]]' },
+			'AC' : { 'name' : 'Armor Class', 'formula' : '%AC%' }
 		},
 		'3.5' : {
-			'Fortitude Save': { 'name' : 'Fortitude Saving Throw', 'formula' : 'd20 + %fortitude%' },
-			'Reflex Save': { 'name' : 'Reflex Saving Throw', 'formula' : 'd20 + %reflex%' },
-			'Will Save': { 'name' : 'Will Saving Throw', 'formula' : 'd20 + %wisdom%' },
-			'Strength Check': { 'name' : 'Strength Check', 'formula' : 'd20 + %str-mod%' },
-			'Dexterity Check': { 'name' : 'Dexterity Check', 'formula' : 'd20 + %dex-mod%' },
-			'Constitution Check': { 'name' : 'Constitution Check', 'formula' : 'd20 + %con-mod%' },
-			'Intelligence Check': { 'name' : 'Intelligence Check', 'formula' : 'd20 + %int-mod%' },
-			'Wisdom Check': { 'name' : 'Wisdom Check', 'formula' : 'd20 + %wis-mod%' },
-			'Charisma Check': { 'name' : 'Charisma Check', 'formula' : 'd20 + %cha-mod%' },
-			'Hide' : { 'name' : 'Hide Check', 'formula' : 'd20 + %hide%' },
-			'Listen': { 'name' : 'Listen Check', 'formula' : 'd20 + %listen%' },
-			'Move Silently' : { 'name' : 'Move Silently Check', 'formula' : 'd20 + %movesilent%' },
-			'Spot': { 'name' : 'Spot Check', 'formula' : 'd20 + %spot%' },
-			'AC' : { 'name' : 'Armor Class', 'formula' : '0d0 + %armorclass%' }
+			'Fortitude Save': { 'name' : 'Fortitude Saving Throw', 'formula' : '[[d20 + %fortitude%]]' },
+			'Reflex Save': { 'name' : 'Reflex Saving Throw', 'formula' : '[[d20 + %reflex%]]' },
+			'Will Save': { 'name' : 'Will Saving Throw', 'formula' : '[[d20 + %wisdom%]]' },
+			'Strength Check': { 'name' : 'Strength Check', 'formula' : '[[d20 + %str-mod%]]' },
+			'Dexterity Check': { 'name' : 'Dexterity Check', 'formula' : '[[d20 + %dex-mod%]]' },
+			'Constitution Check': { 'name' : 'Constitution Check', 'formula' : '[[d20 + %con-mod%]]' },
+			'Intelligence Check': { 'name' : 'Intelligence Check', 'formula' : '[[d20 + %int-mod%]]' },
+			'Wisdom Check': { 'name' : 'Wisdom Check', 'formula' : '[[d20 + %wis-mod%]]' },
+			'Charisma Check': { 'name' : 'Charisma Check', 'formula' : '[[d20 + %cha-mod%]]' },
+			'Hide' : { 'name' : 'Hide Check', 'formula' : '[[d20 + %hide%]]' },
+			'Listen': { 'name' : 'Listen Check', 'formula' : '[[d20 + %listen%]]' },
+			'Move Silently' : { 'name' : 'Move Silently Check', 'formula' : '[[d20 + %movesilent%]]' },
+			'Spot': { 'name' : 'Spot Check', 'formula' : '[[d20 + %spot%]]' },
+			'AC' : { 'name' : 'Armor Class', 'formula' : '%armorclass%' }
 		}
 	},
 
@@ -156,20 +157,28 @@ var groupCheck = groupCheck || (function() {
 			state.groupCheck.options.hideformula = state.groupCheck.options.hidebonus;
 			delete state.groupCheck.options.hidebonus;
 			state.groupCheck.version = 2;
-			log('-=> groupCheck has updated to a new data format. Please make sure your list of checks has converted correctly.<=-');
+			log('-=> groupCheck has updated to a new data format (1=>2). Please make sure your list of checks has converted correctly.<=-');
+			updateState();
+		}
+		if (state.groupCheck.version == 2) {
+			_.each(state.groupCheck.checkList, function(check) {
+				check.formula = '[[' + check.formula+ ']]';
+			});
+			log('-=> groupCheck has updated to a new data format (2=>3). Please make sure your list of checks has converted correctly.<=-');
+			state.groupCheck.version = 3;
 		}
 	},
 
 	// Utility functions
 	safeReadJSON = function (string) {
-	    try {
-        	let o = JSON.parse(string);
-        	if (o && typeof o === 'object') {
-            	return o;
-        	}
-    	}
-    	catch (e) { }
-   		return false;
+		try {
+			let o = JSON.parse(string);
+			if (o && typeof o === 'object') {
+				return o;
+			}
+		}
+		catch (e) { }
+		return false;
 	},
 
 	sendChatNoarchive = function(who, string) {
@@ -238,9 +247,9 @@ var groupCheck = groupCheck || (function() {
 			'<h4>Checks</h4><br> <table style="margin:3px;">' +
 			'<tr><td><b>Command</b></td><td><b>Name</td></b><td><b>Formula</b></td></tr>';
 		_.each(state.groupCheck.checkList, function(value, key) {
-			output += '<tr><td>'+key+'</td><td>'+value.name+'</td><td>'+value.formula+'</td></tr>';
+			output += '<tr><td>'+key+'</td><td>'+value.name+'</td><td>'+value.formula.replace(/\[\[/g,'{{').replace(/\]\]/g,'}}')+'</td></tr>';
 		});
-		output += '</table></div>';
+		output += '</table><br><p>(note that curly brackets may be square brackets in the formula).</p></div>';
 		return output;
 	},
 
@@ -304,12 +313,18 @@ var groupCheck = groupCheck || (function() {
 		}
 
 		if (ro !== 'roll2') {
-			output = rowstyle(namestyle(displayName),
-				rollstyle(computedFormula,rollBoundary,rollAppendix));
+			output = style.makeRow(displayName,
+				style.makeRoll,
+				computedFormula,
+				rollBoundary,
+				rollAppendix);
 		}
 		else {
-			output = rowstyle(namestyle(displayName),
-				roll2style(computedFormula,rollBoundary,rollAppendix));
+			output = style.makeRow(displayName,
+				style.makeRoll2,
+				computedFormula,
+				rollBoundary,
+				rollAppendix);
 		}
 		return output;
 	},
@@ -356,7 +371,7 @@ var groupCheck = groupCheck || (function() {
 			}
 		}
 		else if (opts.add) {
-			let data = safeReadJSON(opts.add);
+			let data = safeReadJSON(opts.add.replace(/\{\{/g,'[[').replace(/\}\}(?!$)/g,']]'));
 			if (_.isObject(data)) {
 				_.each(data, function (value, key) {
 					if (!(_.isObject(value) && _.has(value, 'name') && _.has(value,'formula') && _.isString(value.formula))) {
@@ -364,7 +379,10 @@ var groupCheck = groupCheck || (function() {
 					}
 				});
 				_.extend(state.groupCheck.checkList, data);
-				output = 'Checks added. The imported JSON was ' + JSON.stringify(data);
+				output = 'Checks added. The imported JSON was '
+					+ JSON.stringify(data).replace(/\[\[/g,'{{').replace(/\]\]/g,'}}')
+					+ ' (curly brackets may be square brackets in the formula).';
+
 			} else {
 				handleError(who, 'Error reading input.');
 			}
@@ -466,10 +484,7 @@ var groupCheck = groupCheck || (function() {
 		}
 
 		opts.multi = (opts.multi > 1 ) ? parseInt(opts.multi):1;
-		rollBoundary = (opts.hideformula) ? ['[[[[',']]]]'] : ['[[',']]'];
-		if (opts.noboundary) {
-			rollBoundary = ['',''];
-		}
+		rollBoundary = (opts.hideformula) ? ['[[',']]'] : ['',''];
 
 		if (_.indexOf(rollOptions, opts.ro) === -1) {
 			handleError(who,'Roll option ' + opts.ro + ' is invalid, sorry.');
@@ -483,7 +498,7 @@ var groupCheck = groupCheck || (function() {
 				return;
 			}
 			checkName = kv.shift();
-			checkFormula = kv.join();
+			checkFormula = kv.join().replace(/\{\{/g,'[[').replace(/\}\}/g,']]');
 			checkCmd = true;
 		}
 
@@ -509,7 +524,7 @@ var groupCheck = groupCheck || (function() {
 			});
 		}
 
-		output += boxstyle(headerstyle(checkName), tablestyle(rollText));
+		output += style.makeBox(checkName, rollText);
 
 		try {
 			sendChat(who, output);

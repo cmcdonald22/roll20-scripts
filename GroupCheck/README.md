@@ -21,7 +21,7 @@ If you have two tokens selected, representing the characters **Sarah** and **Mar
 
 **Mark:** [[d20 + @{Mark|dexterity\_saving\_throw\_mod}]]
 
-Internally, the form of the check is proscribed by a formula; the formula in this case is of the form "d20 + %dexterity\_saving\_throw\_mod%", and the script will fill in the right attributes in place of "%dexterity\_saving\_throw\_mod%.
+Internally, the form of the check is proscribed by a formula; the formula in this case is of the form "[[d20 + %dexterity\_saving\_throw\_mod%]]", and the script will fill in the right attributes in place of "%dexterity\_saving\_throw\_mod%.
 
 ## Configuration
 The script is designed to be easily configured to your specific system's needs. You can configure the script using the **!group-check-config** command. **!group-check-config** accepts the following options:
@@ -36,7 +36,9 @@ The script is designed to be easily configured to your specific system's needs. 
 * **!group-check-config --add [JSON]**  adds a check, or several checks, to the list of checks in the database. **[JSON]** must be valid JSON in the following format: 
 
 		{ "Check Command" : { "name" : "Check Name", "formula" : "FORMULA"}}
-Here, the command will be called by **!group-check --Check Command**, the title of the box appearing in chat will be Check Name, and FORMULA is the formula used to calculate the roll result. Attributes to be filled in in FORMULA need to be specified as %name%.
+Here, the command will be called by **!group-check --Check Command**, the title of the box appearing in chat will be Check Name, and FORMULA is the formula used to calculate the roll result. Attributes to be filled in in FORMULA need to be specified as %name%. Because of the way roll20 parses your input, you need to use double curly brackets('{{') instead of double square brackets ('[['). For example, to add a check with command Strength that roll a d20 + the character's Strength attribute, you would type
+
+		!group-check-config --add { "Strength" : { "name" : "Strength Test", "formula" : "{{d20 + %Strength%}}"} }
 
 * **!group-check-config --delete [Command]** will delete the check called **Command** from the database.
 
@@ -71,4 +73,4 @@ Most of the following options can be supplied in two ways: you can either supply
 
 * You can supply a fallback value. When the option **--fallback [value]** is given, a roll will be made even for tokens not linked to a character; for these tokens, **[value]** will be used instead of the FIRST attribute in a roll, and all other attributes are treated as if they were 0. **[value]** may be any expression that the roll20 dice roller can interpret, such as a number, a die roll, a specific character's attribute, or a sum of these things. If also using **--globalmod**, the global modifier is applied in addition to the fallback mod.
 
-* It is possible to supply a custom roll not present in the checks database. The syntax to do this is **--custom CheckName, formula**. This will roll a check with title **CheckName** and formula **formula** for the roll.
+* It is possible to supply a custom roll not present in the checks database. The syntax to do this is **--custom CheckName, formula**. This will roll a check with title **CheckName** and formula **formula** for the roll. Note that due to the way roll20 parses your chat message, you need to use double curly brackets ('{{') instead of double square brackets ('[[') to bound your roll.
