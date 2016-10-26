@@ -223,6 +223,24 @@ var groupCheck = groupCheck || (function() {
 		sendChat(who, string);
 	},
 
+	recoverInlinerollFormulae = function (msg) {
+		// Input:	msg - chat message
+		// Output:	msg.content, with all inline rolls evaluated
+		if (_.has(msg, 'inlinerolls')) {
+			return _.chain(msg.inlinerolls)
+					.reduce(function(previous, current, index) {
+						previous['$[[' + index + ']]'] = current.expression;
+						return previous;
+					},{})
+					.reduce(function(previous, current, index) {
+						return previous.replace(index, '[[' + current + ']]');
+					}, msg.content)
+					.value();
+		} else {
+			return msg.content;
+		}
+	},
+
 	getPlayerName = function(who) {
 		let match = who.match(/(.*) \(GM\)/);
 		if (match) {
@@ -389,7 +407,7 @@ var groupCheck = groupCheck || (function() {
 		const valueOptions = ['fallback','die_adv','die_dis','globalmod'];
 		const booleanOptions = ['whisper', 'usetokenname', 'hideformula', 'showpicture'];
 		const booleanOptionsNegative = ['public', 'usecharname', 'showformula', 'hidepicture'];
-		let opts = processOpts(msg.content, hasValueConfig);
+		let opts = processOpts(recoverInlinerollFormulae(msg), hasValueConfig);
 		let who = getPlayerName(msg.who), output;
 
 		if (!playerIsGM(msg.playerid)) {
@@ -493,7 +511,7 @@ var groupCheck = groupCheck || (function() {
 		let who = getPlayerName(msg.who), charOutput, rollText = '';
 
 		// Options processing
-		let opts = processOpts(msg.content, hasValue);
+		let opts = processOpts(recoverInlinerollFormulae(msg), hasValue);
 		checkCmd = _.intersection(_.keys(state.groupCheck.checkList), _.keys(opts))[0];
 		// Print menu if we don't know what to roll
 		if (!checkCmd && !opts.custom && !opts.help) {
