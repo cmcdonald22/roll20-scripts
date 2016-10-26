@@ -48,9 +48,11 @@ Here, the command will be called by **!group-check --Check Command**, the title 
 
 * **!group-check-config --set option value** will set **option** to **value**. The following options are available: **ro**, **die_adv**, **die_dis**, **fallback**, and **globalmod**. To find out more about what these options do, consult the Options sections.
 
-* **!group-check-config --set option** will set **option** (this is the variant for options which can be either true or false. The following options are available: **showformula**, **hideformula**, **whisper**, **public**, **usecharname**, and **usetokenname**. To find out more about what these options do, consult the Options sections.
+* **!group-check-config --set option** will set **option** (this is the variant for options which can be either true or false). The following options are available: **showformula**, **hideformula**, **whisper**, **public**, **usecharname**, **usetokenname**, **showpicture**, and **hidepicture**. To find out more about what these options do, consult the Options section.
 
 * **!group-check-config --defaults** will reset all options to the factory defaults.
+
+* **!group-check-config --reset** will both empty the list of checks and reset all options.
 
 ## Options
 Most of the following options can be supplied in two ways: you can either supply them on the command line, or change the defaults via !group-check-config. Most of the time, it is probably advisable to do the latter.
