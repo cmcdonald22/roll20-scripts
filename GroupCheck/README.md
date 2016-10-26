@@ -71,6 +71,8 @@ Most of the following options can be supplied in two ways: you can either supply
 
 * It is possible to hide the formula for checks and only show the final result of the roll. This is controlled via the options **--showformula** and **--hideformula**.
 
+* You can turn off the display of the token image next to the character name (it will always be displayed if the name is empty). This is controlled via the options **--showpicture** and **--hidepicture** (on by default).
+
 * You can supply a fallback value. When the option **--fallback [value]** is given, a roll will be made even for tokens not linked to a character; for these tokens, **[value]** will be used instead of the FIRST attribute in a roll, and all other attributes are treated as if they were 0. **[value]** may be any expression that the roll20 dice roller can interpret, such as a number, a die roll, a specific character's attribute, or a sum of these things. If also using **--globalmod**, the global modifier is applied in addition to the fallback mod.
 
 * It is possible to supply a custom roll not present in the checks database. The syntax to do this is **--custom CheckName, formula**. This will roll a check with title **CheckName** and formula **formula** for the roll. Note that due to the way roll20 parses your chat message, you need to use double curly brackets ('{{') instead of double square brackets ('[[') to bound your roll.

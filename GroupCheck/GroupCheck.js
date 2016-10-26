@@ -1,16 +1,48 @@
 var groupCheck = groupCheck || (function() {
 	'use strict';
-	const version = '0.9', stateVersion = 3,
+	const version = '0.9.1', stateVersion = 4,
 	// Configure roll appearance
-	style = {
-		makeBox : (header,rolls) => '<div style="border: 1px solid black; background-color: #FFFFFF; padding: 3px 3px;">'	+ style.makeHeader(header) + '<p>' + style.makeRollTable(rolls) +'</p></div>',
-		makeRollTable : content => '<table style="padding: 3px; border-collapse: separate; width: 100%">'+content+'</table>',
-		makeHeader : text => '<h3><div style="text-align:center">'+text+'</div></h3>',
-		makeRow : (name, rollStyle, formula, boundary, appendix) => '<tr style="padding 2px;">'+style.makeName(name) + rollStyle(formula,boundary,appendix) + '</tr>',
-		makeName : name => '<td style="padding: 2px; border-bottom: 1px solid #ddd"><b>'+name+'</b></td>',
-		makeRoll : (formula, boundary, appendix) => '<td style="text-align:center; padding: 2px; border-bottom: 1px solid #ddd">' + boundary[0] + formula + boundary[1] + appendix + '</td>',
-		makeRoll2 : (f,b,a) => style.makeRoll(f,b,a) + style.makeRoll(f,b,a)
-	},
+	outputStyle = function () {
+		const makeBox = function (header, rolls) {
+			return '<div style="border: 1px solid black; background-color: #FFFFFF;'
+				+ ' padding: 3px 3px;">' + makeHeader(header) + '<p>'
+				+ makeRollTable(rolls) +'</p></div>';
+		},
+
+		makeRollTable = function (content) {
+			return '<table style="padding: 3px; border-collapse: separate; width: 100%">'
+				+ content + '</table>';
+		},
+
+		makeHeader = function (text) {
+		 return '<h3><div style="text-align:center">'+text+'</div></h3>';
+		},
+
+		makeRow = function (pic, name, rollStyle, formula, boundary, appendix) {
+			return '<tr style="padding 2px;">' + makeName(pic, name) + (rollStyle === 'roll2' ?
+				makeRoll2(formula,boundary,appendix) : makeRoll(formula,boundary,appendix))
+			+ '</tr>';
+		},
+
+		makeName = function (pic, name) {
+			return '<td style="vertical-align: middle; padding: 2px; border-bottom: 1px solid #ddd">'
+				+ '<table><tr><td>'+ pic + '</td><td><b>' + name + '</b></td></tr></table></td>';
+		},
+
+		makeRoll = function (formula, boundary, appendix) {
+			return '<td style="text-align:center; padding: 2px; border-bottom: 1px solid #ddd">'
+				+ boundary[0] + formula + boundary[1] + appendix + '</td>';
+		},
+
+		makeRoll2 = function (f,b,a) {
+			return makeRoll(f,b,a) + makeRoll(f,b,a);
+		};
+
+		return {
+			makeBox: makeBox,
+			makeRow: makeRow,
+		};
+	}(),
 
 	// Data variables
 	importData = {
@@ -121,10 +153,11 @@ var groupCheck = groupCheck || (function() {
 		'ro': 'roll1',
 		'whisper': false,
 		'usetokenname': true,
-		'hideformula': false
+		'hideformula': false,
+		'showpicture': true
 	},
 
-	rollOptions = ['roll1', 'roll2', 'adv', 'dis', 'rollsetting'],
+	admissibleRollOptions = ['roll1', 'roll2', 'adv', 'dis', 'rollsetting'],
 
 	// Setup
 	checkInstall = function() {
@@ -166,6 +199,11 @@ var groupCheck = groupCheck || (function() {
 			});
 			log('-=> groupCheck has updated to a new data format (2=>3). Please make sure your list of checks has converted correctly.<=-');
 			state.groupCheck.version = 3;
+			updateState();
+		}
+		if (state.groupCheck.version == 3) {
+			state.groupCheck.options.showpicture = true;
+			state.groupCheck.version = 4;
 		}
 	},
 
@@ -201,14 +239,23 @@ var groupCheck = groupCheck || (function() {
 		sendChatNoarchive('GroupCheck', output);
 	},
 
-	// TODO: Make the help actually useful.
 	printHelp = function(who) {
-		let helpString = '/w "' + who + '" No help, sorry. Please refer to the documentation.';
+		let helpString = '/w "' + who + '"<div style="border: 1px solid black;'
+			+ ' background-color: #FFFFFF; padding: 3px 3px;">'
+			+ 'Please refer to the <a style="text-decoration: underline" href='
+			+ '"https://github.com/joesinghaus/roll20-scripts/blob/master/GroupCheck/README.md"'
+			+ '>documentation</a> for help with using GroupCheck,'
+			+ ' or ask in the API forum thread.</div>';
 		sendChatNoarchive('GroupCheck', helpString);
 	},
 
 	printConfigHelp = function(who) {
-		let helpString = '/w "' + who + '" No help, sorry. Please refer to the documentation.';
+		let helpString = '/w "' + who + '"<div style="border: 1px solid black;'
+			+ ' background-color: #FFFFFF; padding: 3px 3px;">'
+			+ 'Please refer to the <a style="text-decoration: underline" href='
+			+ '"https://github.com/joesinghaus/roll20-scripts/blob/master/GroupCheck/README.md"'
+			+ '>documentation</a> for help with configuring GroupCheck,'
+			+ ' or ask in the API forum thread.</div>';
 		sendChatNoarchive('GroupCheck', helpString);
 	},
 
@@ -271,8 +318,8 @@ var groupCheck = groupCheck || (function() {
 	},
 
 	addCharacterToOutput = function(selected, checkFormula, rollOption, opts, rollBoundary) {
-		let output, displayName, computedFormula, rollAppendix = '', charName,
-			token = getObj('graphic', selected._id),
+		let displayName, computedFormula, rollAppendix = '', charName, tokenPic;
+		const token = getObj('graphic', selected._id),
 			characterId = token.get('represents'),
 			ro = rollOption(characterId),
 			character = getObj('character', characterId);
@@ -287,46 +334,34 @@ var groupCheck = groupCheck || (function() {
 			}
 			computedFormula = checkFormula.replace(/\%(\S.*?)\%/g,
 				'@{' + charName + '|' + '$1' + '}');
+
 		}
 		else if (opts.fallback) {
-			displayName = token.get('name') || `<img src="${token.get('imgsrc')}" height="35" width="35">`;
+			displayName = token.get('name');
 			computedFormula = checkFormula.replace(/\%(\S.*?)\%/,opts.fallback)
 				.replace(/\%(\S.*?)\%/g,'0');
 		}
 		else {
 			return '';
 		}
+		tokenPic = (opts.showpicture || !displayName) ? `<img src="${token.get('imgsrc')}" height="25" width="25">` : '';
+
+		switch (ro) {
+			case 'adv' :
+				rollAppendix = ' (Advantage)';
+				computedFormula = computedFormula.replace(/1?d20/,'2d20kh1');
+				break;
+			case 'dis' :
+				rollAppendix = ' (Disadvantage)';
+				computedFormula = computedFormula.replace(/1?d20/,'2d20kl1');
+				break;
+		}
 
 		if (opts.globalmod) {
 				computedFormula += ` + ${opts.globalmod}[global modifier]`;
 		}
 
-		switch(ro) {
-			case 'adv' :
-				computedFormula = computedFormula.replace(/d20/,opts['die_adv']);
-				rollAppendix = ' (Advantage)';
-				break;
-			case 'dis' :
-				computedFormula = computedFormula.replace(/d20/,opts['die_dis']);
-				rollAppendix = ' (Disadvantage)';
-				break;
-		}
-
-		if (ro !== 'roll2') {
-			output = style.makeRow(displayName,
-				style.makeRoll,
-				computedFormula,
-				rollBoundary,
-				rollAppendix);
-		}
-		else {
-			output = style.makeRow(displayName,
-				style.makeRoll2,
-				computedFormula,
-				rollBoundary,
-				rollAppendix);
-		}
-		return output;
+		return outputStyle.makeRow(tokenPic, displayName,ro,computedFormula,rollBoundary,rollAppendix);
 	},
 
 	processOpts = function(content, hasValue) {
@@ -352,8 +387,8 @@ var groupCheck = groupCheck || (function() {
 	handleConfig = function (msg) {
 		const hasValueConfig = ['import','add','delete','set'];
 		const valueOptions = ['fallback','die_adv','die_dis','globalmod'];
-		const booleanOptions = ['whisper', 'usetokenname', 'hideformula'];
-		const booleanOptionsNegative = ['public', 'usecharname', 'showformula'];
+		const booleanOptions = ['whisper', 'usetokenname', 'hideformula', 'showpicture'];
+		const booleanOptionsNegative = ['public', 'usecharname', 'showformula', 'hidepicture'];
 		let opts = processOpts(msg.content, hasValueConfig);
 		let who = getPlayerName(msg.who), output;
 
@@ -406,7 +441,7 @@ var groupCheck = groupCheck || (function() {
 				output = 'Option ' + kv[0] + ' set to ' + kv[1] + '.';
 			}
 			else if (kv[0] === 'ro') {
-				if (_.indexOf(rollOptions, kv[1]) !== -1) {
+				if (_.indexOf(admissibleRollOptions, kv[1]) !== -1) {
 					state.groupCheck.options.ro = kv[1];
 					output = 'Option ' + kv[0] + ' set to ' + kv[1] + '.';
 				} else {
@@ -422,6 +457,7 @@ var groupCheck = groupCheck || (function() {
 				if (kv[0] === 'public') kv[0] = 'whisper';
 				if (kv[0] === 'showformula') kv[0] = 'hideformula';
 				if (kv[0] === 'usecharname') kv[0] = 'usetokenname';
+				if (kv[0] === 'hidepicture') kv[0] = 'showpicture';
 				state.groupCheck.options[kv[0]] = false;
 				output = 'Option ' + kv[0] + ' set to ' + state.groupCheck.options[kv[0]] + '.';
 			}
@@ -453,12 +489,18 @@ var groupCheck = groupCheck || (function() {
 
 	handleOutput = function (msg) {
 		const hasValue = ['fallback','custom','die_adv','die_dis','globalmod','ro','multi'];
-		let checkCmd, checkName, checkFormula, output, rollBoundary;
+		let checkCmd, checkName, checkFormula, output, rollBoundary, rollOption;
 		let who = getPlayerName(msg.who), charOutput, rollText = '';
 
 		// Options processing
 		let opts = processOpts(msg.content, hasValue);
 		checkCmd = _.intersection(_.keys(state.groupCheck.checkList), _.keys(opts))[0];
+		// Print menu if we don't know what to roll
+		if (!checkCmd && !opts.custom && !opts.help) {
+			printCommandMenu(who,opts);
+			return;
+		}
+		// Continue with options processing
 		if (checkCmd) {
 			checkFormula = state.groupCheck.checkList[checkCmd].formula;
 			checkName = state.groupCheck.checkList[checkCmd].name;
@@ -475,7 +517,10 @@ var groupCheck = groupCheck || (function() {
 			opts.whisper = false;
 			delete opts.public;
 		}
-		opts = _.defaults(opts, state.groupCheck.options);
+		if (opts.hidepicture) {
+			opts.showpicture = false;
+			delete opts.hidepicture;
+		}
 
 		// Help
 		if (opts.help) {
@@ -483,13 +528,6 @@ var groupCheck = groupCheck || (function() {
 			return;
 		}
 
-		opts.multi = (opts.multi > 1 ) ? parseInt(opts.multi):1;
-		rollBoundary = (opts.hideformula) ? ['[[',']]'] : ['',''];
-
-		if (_.indexOf(rollOptions, opts.ro) === -1) {
-			handleError(who,'Roll option ' + opts.ro + ' is invalid, sorry.');
-			return;
-		}
 		// Handle custom modifier
 		if (opts.custom) {
 			let kv = opts.custom.split(/,\s?/);
@@ -502,16 +540,18 @@ var groupCheck = groupCheck || (function() {
 			checkCmd = true;
 		}
 
-		// Print menu if we don't know what to roll
-		if (!checkCmd) {
-			printCommandMenu(who,opts);
+		// Plug in defaults for unspecified options
+		opts = _.defaults(opts, state.groupCheck.options);
+		if (_.indexOf(admissibleRollOptions, opts.ro) === -1) {
+			handleError(who,'Roll option ' + opts.ro + ' is invalid, sorry.');
 			return;
 		}
 
 		// Output
 		output = opts.whisper ? '/w GM ' : '';
-
-		let rollOption = (opts.ro === 'rollsetting') ? getRollOption : ( (charid) => opts.ro);
+		opts.multi = (opts.multi > 1 ) ? parseInt(opts.multi) : 1;
+		rollBoundary = (opts.hideformula) ? ['[[',']]'] : ['',''];
+		rollOption = (opts.ro === 'rollsetting') ? getRollOption : ( (charid) => opts.ro);
 
 		if (msg.selected) {
 			msg.selected.forEach(function(obj) {
@@ -524,7 +564,7 @@ var groupCheck = groupCheck || (function() {
 			});
 		}
 
-		output += style.makeBox(checkName, rollText);
+		output += outputStyle.makeBox(checkName, rollText);
 
 		try {
 			sendChat(who, output);
@@ -538,10 +578,10 @@ var groupCheck = groupCheck || (function() {
 	},
 
 	handleInput = function(msg) {
-		if (msg.type === "api" && msg.content.search(/^!group-check\b/) != -1 && msg.content.search(/^!group-check-config\b/) == -1) {
+		if (msg.type === 'api' && msg.content.search(/^!group-check($|\s)/) != -1) {
 			handleOutput(msg);
 		}
-		else if (msg.type === "api" && msg.content.search(/^!group-check-config\b/) != -1) {
+		else if (msg.type === 'api' && msg.content.search(/^!group-check-config\b/) != -1) {
 			handleConfig(msg);
 		}
 		return;
