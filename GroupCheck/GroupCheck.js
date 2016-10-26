@@ -226,9 +226,9 @@ var groupCheck = groupCheck || (function() {
 	getPlayerName = function(who) {
 		let match = who.match(/(.*) \(GM\)/);
 		if (match) {
-			return match[1];
+			return match[1] || 'GM';
 		} else {
-			return who;
+			return who || 'GM';
 		}
 	},
 
