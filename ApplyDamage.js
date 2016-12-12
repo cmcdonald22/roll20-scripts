@@ -60,7 +60,7 @@ var applyDamage = applyDamage || (function () {
 		handleError = function (whisper, errorMsg) {
 			let output = whisper+'<div style="border:1px solid black;background-color:' +
 				'#FFBABA;padding:3px 3px;"><h4>Error</h4><p>' + errorMsg + '</p></div>';
-			sendChatNoarchive('ApplyDamage', output);
+			sendChat('ApplyDamage', output);
 		},
 		finalApply = function (results, dmg, type, bar) {
 			let token, newValue;
