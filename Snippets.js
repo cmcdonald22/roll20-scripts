@@ -1,17 +1,18 @@
-var scriptlets = scriptlets || function () {
+var Scriptlets = Scriptlets || function () {
   'use strict';
   const bar = '3',
     checkInstall = function () {
       registerWithTokenMod();
     },
     registerWithTokenMod = function () {
-      if (TokenMod && TokenMod.ObserveTokenChange) {
-        TokenMod.ObserveTokenChange(function () {
-          if (obj.get(`bar${bar}_value`) !== prev[`bar${bar}_value`]) {
-            handleHPBarChange(obj);
+      try {
+        TokenMod.ObserveTokenChange(function (token, prev) {
+          if (token.get(`bar${bar}_value`) !== prev[`bar${bar}_value`]) {
+            handleHPBarChange(token);
           }
         });
       }
+      catch (e) {}
     },
     // Remove NPC token from the turn order if bar${bar}_value is nonpositive
     // Add dead marker to token whose bar${bar}_value is nonpositive, remove it
