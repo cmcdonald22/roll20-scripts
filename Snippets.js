@@ -16,20 +16,18 @@ var scriptlets = scriptlets || function () {
     // Remove NPC token from the turn order if bar${bar}_value is nonpositive
     // Add dead marker to token whose bar${bar}_value is nonpositive, remove it
     // if it becomes positive
-    handleHPBarChange = function (obj) {
-      if (obj.get(`bar${bar}_value`) <= 0) {
-        obj.set('status_dead', true);
-        if (_.isEmpty((getObj('character', obj.get('represents')) || {
-            get: s => obj.get(s)
-          }).get('controlledby'))) {
-          Campaign().set('turnorder',
-            JSON.stringify(_.reject(JSON.parse(Campaign().get('turnorder') || '[]'),
-              i => (obj.id === i.id)))
-          );
+    handleHPBarChange = function (token) {
+      if (token.get(`bar${bar}_value`) <= 0) {
+        token.set('status_dead', true);
+        let character = getObj('character', token.get('represents')) || token;
+        if (_.isEmpty(character.get('controlledby'))) {
+          let turnorder = _.reject(JSON.parse(Campaign().get('turnorder') || '[]'),
+            i => (token.id === i.id));
+          Campaign().set('turnorder', JSON.stringify(turnorder));
         }
       }
       else {
-        obj.set('status_dead', false);
+        token.set('status_dead', false);
       }
     },
     registerEventHandlers = function () {
