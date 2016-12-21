@@ -8,7 +8,7 @@ var Scriptlets = Scriptlets || function () {
     registerWithTokenMod = function () {
       try {
         TokenMod.ObserveTokenChange(function (token, prev) {
-          if (token.get(`bar${hpBar}_value`) !== prev[`bar${bar}_value`]) {
+          if (token.get(`bar${hpBar}_value`) !== prev[`bar${hpBar}_value`]) {
             handleHPBarChange(token);
           }
         });
@@ -136,6 +136,7 @@ var Scriptlets = Scriptlets || function () {
       on('chat:message', handleInput);
     };
   return {
+  	HandleHPBarChange : handleHPBarChange,
     CheckInstall: checkInstall,
     RegisterEventHandlers: registerEventHandlers
   }
