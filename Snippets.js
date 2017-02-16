@@ -72,6 +72,7 @@ var Scriptlets = Scriptlets || function () {
     handleHPBarChange = function (token) {
       if (token.get(`bar${hpBar}_value`) <= 0) {
         token.set('status_dead', true);
+        token.toBack();
         let character = getObj('character', token.get('represents')) || token;
         if (_.isEmpty(character.get('controlledby'))) {
           let turnoOrder = _.reject(JSON.parse(Campaign().get('turnorder')) || [],
