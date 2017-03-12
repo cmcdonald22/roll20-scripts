@@ -79,6 +79,9 @@ var applyDamage = applyDamage || (function () {
 					if (status) token.set(`status_${status}`, true);
 					if (_.isNaN(newValue)) newValue = 0;
 					token.set(bar, newValue);
+					if('undefined' !== typeof HealthColors && HealthColors.Update) {
+						HealthColors.Update(token, prev);
+					}
 				}
 				else if (token && type === 'half') {
 					if (healthStopsAtZero) {
@@ -88,9 +91,9 @@ var applyDamage = applyDamage || (function () {
 					}
 					if (_.isNaN(newValue)) newValue = 0;
 					token.set(bar, newValue);
-				}
-				if('undefined' !== typeof HealthColors && HealthColors.Update){
-					HealthColors.Update(token, prev);
+					if('undefined' !== typeof HealthColors && HealthColors.Update) {
+						HealthColors.Update(token, prev);
+					}
 				}
 			});
 		},
