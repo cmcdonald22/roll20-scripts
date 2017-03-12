@@ -1,6 +1,7 @@
 var applyDamage = applyDamage || (function () {
 	'use strict';
 	const version = '1.0',
+		healthStopsAtZero = false,
 		checkInstall = function () {
 			log('-=> ApplyDamage v' + version + ' <=-');
 		},
@@ -12,6 +13,8 @@ var applyDamage = applyDamage || (function () {
 			dmg: '0',
 			bar: '1'
 		},
+		statusMarkers = [
+			'red', 'blue', 'green', 'brown', 'purple', 'pink', 'yellow', 'dead', 'skull', 'sleepy', 'half-heart', 'half-haze', 'interdiction', 'snail', 'lightning-helix', 'spanner', 'chained-heart', 'chemical-bolt', 'death-zone', 'drink-me', 'edge-crack', 'ninja-mask', 'stopwatch', 'fishing-net', 'overdrive', 'strong', 'fist', 'padlock', 'three-leaves', 'fluffy-wing', 'pummeled', 'tread', 'arrowed', 'aura', 'back-pain', 'black-flag', 'bleeding-eye', 'bolt-shield', 'broken-heart', 'cobweb', 'broken-shield', 'flying-flag', 'radioactive', 'trophy', 'broken-skull', 'frozen-orb', 'rolling-bomb', 'white-tower', 'grab', 'screaming', 'grenade', 'sentry-gun', 'all-for-one', 'angel-outfit', 'archery-target'],
 		getWhisperPrefix = function (playerid) {
 			let player = getObj('player', playerid);
 			if (player && player.get('_displayname')) {
@@ -62,25 +65,38 @@ var applyDamage = applyDamage || (function () {
 				'#FFBABA;padding:3px 3px;"><h4>Error</h4><p>' + errorMsg + '</p></div>';
 			sendChat('ApplyDamage', output);
 		},
-		finalApply = function (results, dmg, type, bar) {
+		finalApply = function (results, dmg, type, bar, status) {
 			let token, newValue;
 			_.each(results, function (saved, id) {
 				token = getObj('graphic', id);
+				let prev = JSON.parse(JSON.stringify(token));
 				if (token && !saved) {
-					newValue = parseInt(token.get(bar)) - dmg;
+					if (healthStopsAtZero) {
+						newValue = Math.max(parseInt(token.get(bar)) - dmg, 0);
+					} else {
+						newValue = parseInt(token.get(bar)) - dmg;
+					}
+					if (status) token.set(`status_${status}`, true);
 					if (_.isNaN(newValue)) newValue = 0;
 					token.set(bar, newValue);
 				}
 				else if (token && type === 'half') {
-					newValue = parseInt(token.get(bar)) - Math.floor(dmg / 2);
+					if (healthStopsAtZero) {
+						newValue = Math.max(parseInt(token.get(bar)) - Math.floor(dmg / 2), 0);
+					} else {
+						newValue = parseInt(token.get(bar)) - Math.floor(dmg / 2);
+					}
 					if (_.isNaN(newValue)) newValue = 0;
 					token.set(bar, newValue);
+				}
+				if('undefined' !== typeof HealthColors && HealthColors.Update){
+					HealthColors.Update(token, prev);
 				}
 			});
 		},
 		handleInput = function (msg) {
 			if (msg.type === 'api' && msg.content.search(/^!apply-damage\b/) !== -1) {
-				const hasValue = ['ids', 'saves', 'DC', 'type', 'dmg', 'bar'],
+				const hasValue = ['ids', 'saves', 'DC', 'type', 'dmg', 'bar', 'status'],
 					opts = _.defaults(parseOpts(processInlinerolls(msg), hasValue),
 						defaultOpts);
 				opts.ids = opts.ids.split(/,\s*/g);
@@ -95,17 +111,23 @@ var applyDamage = applyDamage || (function () {
 					handleError(getWhisperPrefix(msg.playerid), 'Invalid bar.');
 					return;
 				}
+				if (opts.status && !_.contains(statusMarkers, opts.status)) {
+					handleError(getWhisperPrefix(msg.playerid), 'Invalid status.');
+					return;
+				}
 				opts.bar = 'bar' + opts.bar + '_value';
 				const results = _.reduce(opts.ids, function (m, id, k) {
 					m[id] = parseInt(opts.saves[k] || '0') >= opts.DC;
 					return m;
 				}, {});
-				finalApply(results, opts.dmg, opts.type, opts.bar);
+				finalApply(results, opts.dmg, opts.type, opts.bar, opts.status);
 				let output = getWhisperPrefix(msg.playerid) + '<div style="border:1px ' +
 					'solid black;background-color:#FFFFFF;padding:3px;"><p>' +
 					opts.dmg + ' damage applied to tokens, with ' +
 					(opts.type === 'half' ? 'half ' : 'no ') +
-					'damage on a successful saving throw.</p></div>';
+					'damage on a successful saving throw.' +
+					(opts.status ? ` ${opts.status} statusmarker applied to tokens.` : '') +
+					'</p></div>';
 				sendChat('ApplyDamage', output);
 			}
 			return;
