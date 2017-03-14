@@ -1,7 +1,7 @@
 var applyDamage = applyDamage || (function () {
 	'use strict';
 	const version = '1.0',
-		healthStopsAtZero = false,
+		boundedBar = false,
 		checkInstall = function () {
 			log('-=> ApplyDamage v' + version + ' <=-');
 		},
@@ -66,31 +66,29 @@ var applyDamage = applyDamage || (function () {
 			sendChat('ApplyDamage', output);
 		},
 		finalApply = function (results, dmg, type, bar, status) {
-			let token, newValue;
+			const barCur = `bar${bar}_value`,
+				barMax = `bar${bar}_max`;
 			_.each(results, function (saved, id) {
-				token = getObj('graphic', id);
-				let prev = JSON.parse(JSON.stringify(token));
+				let token = getObj('graphic', id),
+					prev = JSON.parse(JSON.stringify(token || {})), newValue;
 				if (token && !saved) {
-					if (healthStopsAtZero) {
-						newValue = Math.max(parseInt(token.get(bar)) - dmg, 0);
+					if (boundedBar) {
+						newValue = Math.min(Math.max(parseInt(token.get(barCur)) - dmg, 0), parseInt(token.get(barMax)));
 					} else {
-						newValue = parseInt(token.get(bar)) - dmg;
+						newValue = parseInt(token.get(barCur)) - dmg;
 					}
 					if (status) token.set(`status_${status}`, true);
-					if (_.isNaN(newValue)) newValue = 0;
-					token.set(bar, newValue);
-					if('undefined' !== typeof HealthColors && HealthColors.Update) {
-						HealthColors.Update(token, prev);
-					}
 				}
 				else if (token && type === 'half') {
-					if (healthStopsAtZero) {
-						newValue = Math.max(parseInt(token.get(bar)) - Math.floor(dmg / 2), 0);
+					if (boundedBar) {
+						newValue = Math.min(Math.max(parseInt(token.get(barCur)) - Math.floor(dmg / 2), 0), parseInt(token.get(barMax)));
 					} else {
-						newValue = parseInt(token.get(bar)) - Math.floor(dmg / 2);
+						newValue = parseInt(token.get(barCur)) - Math.floor(dmg / 2);
 					}
-					if (_.isNaN(newValue)) newValue = 0;
-					token.set(bar, newValue);
+				}
+				if (!_.isUndefined(newValue)) {
+					if (_.isNaN(newValue)) newValue = token.get(barCur);
+					token.set(barCur, newValue);
 					if('undefined' !== typeof HealthColors && HealthColors.Update) {
 						HealthColors.Update(token, prev);
 					}
@@ -118,7 +116,6 @@ var applyDamage = applyDamage || (function () {
 					handleError(getWhisperPrefix(msg.playerid), 'Invalid status.');
 					return;
 				}
-				opts.bar = 'bar' + opts.bar + '_value';
 				const results = _.reduce(opts.ids, function (m, id, k) {
 					m[id] = parseInt(opts.saves[k] || '0') >= opts.DC;
 					return m;
@@ -131,7 +128,7 @@ var applyDamage = applyDamage || (function () {
 					'damage on a successful saving throw.' +
 					(opts.status ? ` ${opts.status} statusmarker applied to tokens.` : '') +
 					'</p></div>';
-				sendChat('ApplyDamage', output);
+				sendChat('ApplyDamage', output, null, {noarchive: true});
 			}
 			return;
 		},
