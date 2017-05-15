@@ -112,6 +112,9 @@ var applyDamage = applyDamage || (function () {
 					handleError(getWhisperPrefix(msg.playerid), 'Invalid bar.');
 					return;
 				}
+				if (opts.status === 'none') {
+					delete opts.status;
+				}
 				if (opts.status && !_.contains(statusMarkers, opts.status)) {
 					handleError(getWhisperPrefix(msg.playerid), 'Invalid status.');
 					return;
@@ -123,10 +126,10 @@ var applyDamage = applyDamage || (function () {
 				finalApply(results, opts.dmg, opts.type, opts.bar, opts.status);
 				let output = getWhisperPrefix(msg.playerid) + '<div style="border:1px ' +
 					'solid black;background-color:#FFFFFF;padding:3px;"><p>' +
-					opts.dmg + ' damage applied to tokens, with ' +
+					(opts.dmg ? opts.dmg + ' damage applied to tokens, with ' +
 					(opts.type === 'half' ? 'half ' : 'no ') +
-					'damage on a successful saving throw.' +
-					(opts.status ? ` ${opts.status} statusmarker applied to tokens.` : '') +
+					'damage on a successful saving throw.' : '') +
+					(opts.status ? ` ${opts.status} statusmarker applied to tokens that failed the save.` : '') +
 					'</p></div>';
 				sendChat('ApplyDamage', output, null, {noarchive: true});
 			}
