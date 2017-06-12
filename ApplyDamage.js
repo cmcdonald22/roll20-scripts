@@ -129,7 +129,7 @@ var applyDamage = applyDamage || (function () {
 					(opts.dmg ? opts.dmg + ' damage applied to tokens, with ' +
 					(opts.type === 'half' ? 'half ' : 'no ') +
 					'damage on a successful saving throw.' : '') +
-					(opts.status ? ` ${opts.status} statusmarker applied to tokens that failed the save.` : '') +
+					(opts.status ? ` ${opts.status} status marker applied to tokens that failed the save.` : '') +
 					'</p></div>';
 				sendChat('ApplyDamage', output, null, {noarchive: true});
 			}
