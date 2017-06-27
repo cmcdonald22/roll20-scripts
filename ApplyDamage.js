@@ -104,7 +104,7 @@ var applyDamage = applyDamage || (function () {
 				opts.saves = opts.saves.split(/,\s*/g);
 				opts.DC = parseInt(opts.DC);
 				opts.dmg = parseInt(opts.dmg);
-				if (!playerIsGM(msg.playerid)) {
+				if (!playerIsGM(msg.playerid) && getObj('player', msg.playerid)) {
 					handleError(getWhisperPrefix(msg.playerid), 'Permission denied.');
 					return;
 				}
