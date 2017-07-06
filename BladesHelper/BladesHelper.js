@@ -27,19 +27,19 @@
 //   with name <name>. If the sheet is a character sheet, it will be put on the character page,
 //   if it is a crew sheet, it will be put on the crew page. "Linked" means that changes in
 //   either of the clocks will effect changes in the other one. Example:
-//     !blades-helper add-clock 6 char @{Silver|character_id} Research binding a demon
+//     !blades-helper add-clock 6 char @{Silver|character_id} Research demon binding
 //
 // * !blades-helper add-stress-bar <charid> <attrname>
 //   Creates a new stress bar on the tabletop, linked to the attribute <attrname> of
 //	 the character with id <charid>. Example:
-//     !blades-helper add-stress-bar @{Canter|character_id} stress
-//     !blades-helper add-stress-bar @{Bloodletters_character_id} heat
+//     !blades-helper add-stress-bar @{Canter Haig|character_id} stress
+//     !blades-helper add-stress-bar @{Bloodletters|character_id} heat
 //
 // * !blades-helper add-trauma-bar <charid> <attrname>
 //   Creates a new trauma bar on the tabletop, linked to the attribute <attrname> of
 //	 the character with id <charid>. Example:
 //     !blades-helper add-trauma-bar @{Canter Haig|character_id} trauma
-//     !blades-helper add-stress-bar @{Bloodletters_character_id} wanted
+//     !blades-helper add-stress-bar @{Bloodletters|character_id} wanted
 //
 // * !blades-helper add-by-token <attrname>
 //   Starts to link the selected rollable table side with the attribute <attrname>
