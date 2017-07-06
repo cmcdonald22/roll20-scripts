@@ -1,5 +1,7 @@
 // BladesHelper v1.0
 //
+// Credit for the stress and trauma tokens goes to Sven Düsterwald
+//
 // CONFIGURATION
 //
 // 1) The position variable stores the x-y coordinates of the point where the clocks will appear.
