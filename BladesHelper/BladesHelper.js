@@ -1,4 +1,4 @@
-// BladesHelper v1.0
+// BladesHelper v1.1
 //
 // Credit for the stress and trauma tokens goes to Sven Düsterwald
 //
@@ -256,12 +256,17 @@ var bladesHelper = bladesHelper || (function () {
 			if (msg.type === 'api' && msg.content.match(/^!blades-helper/)) {
 				const args = msg.content.split(' ').slice(1),
 					whisper = getWhisperPrefix(msg.playerid);
+				let character, control;
 				switch (args.shift()) {
 				case 'add-by-id':
 					if (args[0] && args[1] && msg.selected) {
 						msg.selected.forEach(o => {
 							const token = getObj('graphic', o._id),
-								character = getObj('character', args[0]);
+								character = getObj('character', args[0]),
+								control = character && character.get('controlledby').split(/,/);
+							if (!playerIsGM(msg.playerid) && control && !control.includes('all') && !control.includes(msg.playerid)) {
+								return;
+							}
 							if (token && token.get('sides') && character) {
 								state.BladesHelper.data.push({
 									character: args[0],
@@ -291,6 +296,11 @@ var bladesHelper = bladesHelper || (function () {
 					break;
 				case 'add-stress-bar':
 					if (getObj('character', args[0]) && args[1]) {
+						character = getObj('character', args[0]);
+						control = character && character.get('controlledby').split(/,/);
+						if (!playerIsGM(msg.playerid) && control && !control.includes('all') && !control.includes(msg.playerid)) {
+							return;
+						}
 						const token = createObj('graphic', getStressTokenData(args[0]));
 						state.BladesHelper.data.push({
 							character: args[0],
@@ -301,6 +311,11 @@ var bladesHelper = bladesHelper || (function () {
 					break;
 				case 'add-trauma-bar':
 					if (getObj('character', args[0]) && args[1]) {
+						character = getObj('character', args[0]);
+						control = character && character.get('controlledby').split(/,/);
+						if (!playerIsGM(msg.playerid) && control && !control.includes('all') && !control.includes(msg.playerid)) {
+							return;
+						}
 						const token = createObj('graphic', getTraumaTokenData(args[0]));
 						state.BladesHelper.data.push({
 							character: args[0],
@@ -315,6 +330,13 @@ var bladesHelper = bladesHelper || (function () {
 						charID = (target === 'char') ? args[2] : null,
 						label = args.slice((target === 'char') ? 3 : 2).join(' ');
 					if (clockData[size] && (charID ? getObj('character', charID) : true)) {
+						if (charID) {
+							character = getObj('character', charID);
+							control = character && character.get('controlledby').split(/,/);
+							if (!playerIsGM(msg.playerid) && control && !control.includes('all') && !control.includes(msg.playerid)) {
+								return;
+							}
+						}
 						const token = createObj('graphic', getClockTokenData(size, label, charID, msg.playerid));
 						if (charID) {
 							const rowID = generateRowID(),
@@ -368,6 +390,9 @@ var bladesHelper = bladesHelper || (function () {
 					sendChatNoArchive(output);
 					break;
 				case 'clear':
+					if (!playerIsGM(msg.playerid)) {
+						return;
+					}
 					state.BladesHelper = {
 						data: []
 					};
