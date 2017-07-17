@@ -17,6 +17,9 @@
 //   clock on the tabletop. Be careful to set the size first, and then the name, since the
 //   size will be locked in once the name has been entered.
 //
+// * !blades-helper help
+//   Show help on available commands.
+//
 // * !blades-helper add-clock <size> none <name>
 //   Creates a new clock of size <size> with name <name> on the tabletop. This clock is not
 //   linked to any clock on a character sheet. Example:
@@ -134,6 +137,12 @@ var bladesHelper = bladesHelper || (function () {
 				"https://s3.amazonaws.com/files.d20.io/images/35195608/CfR_8yXi88y5qshbYUacsw/thumb.png?1498658810",
 				"https://s3.amazonaws.com/files.d20.io/images/35195607/8dwUW46sa4_1aIClmvypMw/thumb.png?1498658810"
 			]
+		},
+		showHelp = function (whisper) {
+			let output = whisper + '<div style="border:1px solid #888;border-radius:5px;' +
+				'background-color:#FFFFFF;padding:1px 3px;margin-left:-42px;">' +
+				'BladesHelper v1.1<br><br>Credit for the stress and trauma tokens goes to Sven Düsterwald.<br><br>**CONFIGURATION OPTIONS**<br><br>1) The position variable stores the x-y coordinates of the point where the clocks will appear. Change it to put them somewhere else.<br><br>2) You can change the URLs in the clockData and barData variables to use different graphics. Due to Roll20 restrictions, they need to be images uploaded to your Roll20 library, and it needs to be the "thumb" size variant.<br><br>**USAGE**<br><br> Adding a clock to a character sheet and naming it will automatically create a linked clock on the tabletop. Be careful to set the size first, and then the name, since the size will be locked in once the name has been entered.<br><br> **!blades-helper add-clock &lt;size&gt; none &lt;name&gt;**<br>Creates a new clock of size &lt;size&gt; with name &lt;name&gt; on the tabletop. This clock is not linked to any clock on a character sheet. Example:<br> !blades-helper add-clock 8 none Drive off the Red Sashes gang<br><br>**!blades-helper add-clock &lt;size&gt; char &lt;charid&gt; &lt;name&gt;**<br>Creates a new clock of size &lt;size&gt; on the tabletop, linked to the character with id &lt;charid&gt;, with name &lt;name&gt;. If the sheet is a character sheet, it will be put on the character page, if it is a crew sheet, it will be put on the crew page. "Linked" means that changes in either of the clocks will effect changes in the other one. Example:<br> !blades-helper add-clock 6 char @{Silver|character_id} Research demon binding<br><br>**!blades-helper add-stress-bar &lt;charid&gt; &lt;attrname&gt;**<br>Creates a new stress bar on the tabletop, linked to the attribute &lt;attrname&gt; of the character with id &lt;charid&gt;. Example:<br> !blades-helper add-stress-bar @{Canter Haig|character_id} stress<br>!blades-helper add-stress-bar @{Bloodletters|character_id} heat<br><br>**!blades-helper add-trauma-bar &lt;charid&gt; &lt;attrname&gt;**<br>Creates a new trauma bar on the tabletop, linked to the attribute &lt;attrname&gt; of the character with id &lt;charid&gt;. Example:<br> !blades-helper add-trauma-bar @{Canter Haig|character_id} trauma<br> !blades-helper add-stress-bar @{Bloodletters|character_id} wanted<br><br>**!blades-helper add-by-token &lt;attrname&gt;**<br>Starts to link the selected rollable table side with the attribute &lt;attrname&gt; of the character that the rollable table token represents. Example:<br> !blades-helper add-by-token stress<br> !blades-helper add-by-token trauma<br><br>**!blades-helper add-by-id &lt;charid&gt; &lt;attrname&gt;**<br>Starts to link the selected rollable table side with the attribute &lt;attrname&gt; of the character with id &lt;charid&gt;. Example:<br> !blades-helper add-by-id @{Silver|character_id} stress<br> !blades-helper add-by-id @{Silver|character_id} trauma<br><br>**!blades-helper show**<br>Shows all currently active links between tokens and character atributes.<br><br>**!blades-helper remove**<br>Removes any link for the currently selected tokens.<br><br>**!blades-helper clear**<br>Clears all links between tokens and attributes.' + '</div>';
+			sendChatNoArchive(output);
 		},
 		generateUUID = function () {
 			"use strict";
@@ -254,7 +263,7 @@ var bladesHelper = bladesHelper || (function () {
 		},
 		handleInput = function (msg) {
 			if (msg.type === 'api' && msg.content.match(/^!blades-helper/)) {
-				const args = msg.content.split(' ').slice(1),
+				const args = msg.content.split(' ').slice(1) || [''],
 					whisper = getWhisperPrefix(msg.playerid);
 				let character, control;
 				switch (args.shift()) {
@@ -265,6 +274,7 @@ var bladesHelper = bladesHelper || (function () {
 								character = getObj('character', args[0]),
 								control = character && character.get('controlledby').split(/,/);
 							if (!playerIsGM(msg.playerid) && control && !control.includes('all') && !control.includes(msg.playerid)) {
+								sendChatNoArchive(`${whisper} Permission denied.`);
 								return;
 							}
 							if (token && token.get('sides') && character) {
@@ -299,6 +309,7 @@ var bladesHelper = bladesHelper || (function () {
 						character = getObj('character', args[0]);
 						control = character && character.get('controlledby').split(/,/);
 						if (!playerIsGM(msg.playerid) && control && !control.includes('all') && !control.includes(msg.playerid)) {
+							sendChatNoArchive(`${whisper} Permission denied.`);
 							return;
 						}
 						const token = createObj('graphic', getStressTokenData(args[0]));
@@ -307,6 +318,7 @@ var bladesHelper = bladesHelper || (function () {
 							token: token.id,
 							attribute: args[1].toLowerCase()
 						});
+						sendChatNoArchive(`${whisper} Stress bar added for attribute ${args[1]} and character ${character.get('name')}.`);
 					}
 					break;
 				case 'add-trauma-bar':
@@ -314,6 +326,7 @@ var bladesHelper = bladesHelper || (function () {
 						character = getObj('character', args[0]);
 						control = character && character.get('controlledby').split(/,/);
 						if (!playerIsGM(msg.playerid) && control && !control.includes('all') && !control.includes(msg.playerid)) {
+							sendChatNoArchive(`${whisper} Permission denied.`);
 							return;
 						}
 						const token = createObj('graphic', getTraumaTokenData(args[0]));
@@ -322,6 +335,7 @@ var bladesHelper = bladesHelper || (function () {
 							token: token.id,
 							attribute: args[1].toLowerCase()
 						});
+						sendChatNoArchive(`${whisper} Trauma bar added for attribute ${args[1]} and character ${character.get('name')}.`);
 					}
 					break;
 				case 'add-clock':
@@ -334,6 +348,7 @@ var bladesHelper = bladesHelper || (function () {
 							character = getObj('character', charID);
 							control = character && character.get('controlledby').split(/,/);
 							if (!playerIsGM(msg.playerid) && control && !control.includes('all') && !control.includes(msg.playerid)) {
+								sendChatNoArchive(`${whisper} Permission denied.`);
 								return;
 							}
 						}
@@ -389,8 +404,13 @@ var bladesHelper = bladesHelper || (function () {
 						'</table></div>';
 					sendChatNoArchive(output);
 					break;
+				case 'help':
+				case '':
+					showHelp(whisper);
+					break;
 				case 'clear':
 					if (!playerIsGM(msg.playerid)) {
+						sendChatNoArchive(`${whisper} Permission denied.`);
 						return;
 					}
 					state.BladesHelper = {
