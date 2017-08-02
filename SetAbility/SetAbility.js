@@ -1,13 +1,16 @@
 // setAbility version 1.0
 var setAbility = setAbility || (function () {
 	'use strict';
-	const version = '1.0',
+	const version = '1.1',
 		replacers = [
-			['<', '[', /</g, /\[/g],
-			['>', ']', />/g, /\]/g],
-			['~', '-', /\~/g, /\-/g],
-			[';', '?', /\;/g, /\?/g],
-			['`', '@', /`/g, /@/g]
+			['[[', /\\\[/g],
+			[']]', /\\\]/g],
+			['-', /\~/g],
+			['?', /\\q/g],
+			['@', /\\at/g],
+			['%', /\\p/g],
+			['&', /&/g],
+			['#', /\\r/g]
 		],
 		checkInstall = function () {
 			log(`-=> SetAbility v${version} <=-`);
@@ -42,9 +45,6 @@ var setAbility = setAbility || (function () {
 			let character = getObj('character', id);
 			return (character) ? character.get('name') : '';
 		},
-		escapeRegExp = function (str) {
-			return str.replace(/[\-\[\]\/\{\}\(\)\*\+\?\.\\\^\$\|]/g, "\\$&");
-		},
 		htmlReplace = function (str) {
 			let entities = {
 				'<': 'lt',
@@ -60,13 +60,12 @@ var setAbility = setAbility || (function () {
 				'_': '#95',
 				'"': 'quot'
 			};
-			return _.chain(str.split(''))
-				.map(c => (_.has(entities, c)) ? ('&' + entities[c] + ';') : c)
-				.value()
+			return str.split('')
+				.map(c => (entities[c]) ? ('&' + entities[c] + ';') : c)
 				.join('');
 		},
 		processInlinerolls = function (msg) {
-			if (_.has(msg, 'inlinerolls')) {
+			if (msg['inlinerolls']) {
 				return _.chain(msg.inlinerolls)
 					.reduce(function (m, v, k) {
 						let ti = _.reduce(v.results.rolls, function (m2, v2) {
@@ -90,38 +89,45 @@ var setAbility = setAbility || (function () {
 				return msg.content;
 			}
 		},
-		getAbilities = function (list, abilityNames, errors, createMissing, deleteMode) {
+		getAbilities = function (list, abilityNames, errors, createMissing, deleteMode, getAll) {
 			let abilityNamesUpper = abilityNames.map(x => x.toUpperCase()),
-				nameIndex, allAbilities = {};
-			_.each(list, charid => (allAbilities[charid] = {}));
-			_.each(list, function (charid) {
-				_.each(findObjs({
+				allAbilities = {};
+			list.forEach(charid => {
+				allAbilities[charid] = {};
+				findObjs({
 					_type: 'ability',
 					_characterid: charid
-				}), function (o) {
-					nameIndex = _.indexOf(abilityNamesUpper, o.get('name')
-						.toUpperCase());
-					if (nameIndex !== -1) {
-						allAbilities[charid][abilityNames[nameIndex]] = o;
+				}).forEach(o => {
+					if (getAll) {
+						allAbilities[charid][o.get('_id')] = o;
+					}
+					else {
+						let nameIndex = abilityNamesUpper.indexOf(o.get('name').toUpperCase());
+						if (nameIndex !== -1) {
+							allAbilities[charid][abilityNames[nameIndex]] = o;
+						}
 					}
 				});
-				_.each(_.difference(abilityNames, _.keys(allAbilities[charid])), function (key) {
-					if (createMissing) {
-						allAbilities[charid][key] = createObj('ability', {
-							characterid: charid,
-							name: key
+				if (!getAll) {
+					abilityNames.filter(x => !Object.keys(allAbilities[charid]).includes(x))
+						.forEach(key => {
+							if (createMissing) {
+								allAbilities[charid][key] = createObj('ability', {
+									characterid: charid,
+									name: key
+								});
+							}
+							else if (!deleteMode) {
+								errors.push(`Missing ability ${key} not created for` +
+									` character ${getCharNameById(charid)}.`);
+							}
 						});
-					}
-					else if (!deleteMode) {
-						errors.push(`Missing ability ${key} not created for` +
-							` character ${getCharNameById(charid)}.`);
-					}
-				});
+				}
 			});
 			return allAbilities;
 		},
 		delayedSetAbilities = function (whisper, list, setting, errors, allAbilities, fillIn, opts) {
-			let cList = _.clone(list),
+			let cList = [...list],
 				feedback = [],
 				dWork = function (charid) {
 					setCharAbilities(charid, setting, errors, feedback, allAbilities[charid],
@@ -138,7 +144,7 @@ var setAbility = setAbility || (function () {
 		},
 		setCharAbilities = function (charid, setting, errors, feedback, abilities, fillIn, opts) {
 			let charFeedback = {};
-			_.each(abilities, function (ability, abilityName) {
+			Object.entries(abilities).forEach(([abilityName, ability]) => {
 				let newValue = fillIn[abilityName] ? fillInAttrValues(charid, setting[abilityName]) : setting[abilityName];
 				if (opts.evaluate) {
 					try {
@@ -155,49 +161,49 @@ var setAbility = setAbility || (function () {
 						return;
 					}
 				}
+				let finalValue = {};
+				if (opts.token) finalValue.istokenaction = true;
+				if (newValue + '' === newValue) finalValue.action = newValue;
 				charFeedback[abilityName] = newValue;
-				ability.set({
-					action: newValue,
-					istokenaction: opts.token
-				});
+				ability.set(finalValue);
 			});
 			// Feedback
 			if (!opts.silent) {
-				charFeedback = _.chain(charFeedback)
-					.map(function (value, name) {
-						if (value || value === '') return `${name} to ${htmlReplace(value) || '<i>(empty)</i>'}`;
+				charFeedback = Object.entries(charFeedback).map(([name, value]) => {
+						if (value !== false) return `${name} to ${htmlReplace(value) || '<i>(empty)</i>'}`;
 						else return null;
 					})
-					.compact()
-					.value();
-				if (!_.isEmpty(charFeedback)) {
-					feedback.push(`Setting ${charFeedback.join(', ')} for` +
+					.filter(x => !!x);
+				if (charFeedback.length) {
+					feedback.push(`Setting abilities ${charFeedback.join(', ')} for` +
 						` character ${getCharNameById(charid)}.`);
 				}
+				else if (opts.token) {
+					feedback.push(`Changing token action status for character ${getCharNameById(charid)}.`);
+				}
 				else {
-					feedback.push(`Nothing to do for character` +
-						` ${getCharNameById(charid)}.`);
+					feedback.push(`Nothing to do for character ${getCharNameById(charid)}.`);
 				}
 			}
 			return;
 		},
 		fillInAttrValues = function (charid, expression) {
-			let match = expression.match(/%(\S.*?)(?:_(max))?%/),
+			let match = expression.match(/%%(\S.*?)(?:_(max))?%%/),
 				replacer;
 			while (match) {
 				replacer = getAttrByName(charid, match[1], match[2] || 'current') || '';
-				expression = expression.replace(/%(\S.*?)(?:_(max))?%/, replacer);
-				match = expression.match(/%(\S.*?)(?:_(max))?%/);
+				expression = expression.replace(/%%(\S.*?)(?:_(max))?%%/, replacer);
+				match = expression.match(/%%(\S.*?)(?:_(max))?%%/);
 			}
 			return expression;
 		},
-		deleteAbilities = function (whisper, allAbilities, silent) {
+		deleteAbilities = function (whisper, allAbilities, silent, deleteall) {
 			let feedback = {};
-			_.each(allAbilities, function (charAbilities, charid) {
+			Object.entries(allAbilities).forEach(([charid, charAbilities]) => {
 				feedback[charid] = [];
-				_.each(charAbilities, function (ability, name) {
+				Object.entries(charAbilities).forEach(([name, ability]) => {
+					feedback[charid].push(deleteall ? ability.get('name') : name);
 					ability.remove();
-					feedback[charid].push(name);
 				});
 			});
 			if (!silent) sendDeleteFeedback(whisper, feedback);
@@ -209,85 +215,72 @@ var setAbility = setAbility || (function () {
 			//			hasValue - array of all options which come with a value
 			// Output:	object containing key:true if key is not in hasValue. and containing
 			//			key:value otherwise
-			let opts = {};
-			let args = _.rest(content.replace(/<br\/>\n/g, ' ')
+			return content.replace(/<br\/>\n/g, ' ')
 				.replace(/\s*$/g, '')
 				.replace(/({{(.*?)\s*}}$)/g, '$2')
-				.split(/\s+--/));
-			_.each(args, function (arg) {
-				let kv = arg.split(/\s(.+)/);
-				if (_.contains(hasValue, kv[0])) {
-					opts[kv[0]] = kv[1];
-				}
-				else {
-					opts[arg] = true;
-				}
-			});
-			return opts;
-		},
-		parseAbilities = function (args, replace, fillIn) {
-			// Input:	args - array containing comma-separated list of strings, every one of which contains
-			//				an expression of the form key|value or key|value|maxvalue
-			//			replace - true if characters from the replacers array should be replaced
-			// Output:	Object containing key|value for all expressions.
-			let setting = args.map(function (str) {
-					return str.split(/(\\?(?:#|\|))/g)
-						.reduce(function (m, s) {
-							if ((s === '#' || s === '|')) m[m.length] = '';
-							else if ((s === '\\#' || s === '\\|')) m[m.length - 1] += s.slice(-1);
-							else m[m.length - 1] += s;
-							return m;
-						}, ['']);
-				})
-				.filter(v => !!v)
-				.reduce((p, c) => {
-					p[c[0]] = c[1] || '';
-					return p;
+				.split(/\s+--/)
+				.slice(1)
+				.reduce((m, arg) => {
+					let kv = arg.split(/\s(.+)/);
+					if (hasValue.includes(kv[0])) {
+						m[kv[0]] = kv[1];
+					}
+					else {
+						m[arg] = true;
+					}
+					return m;
 				}, {});
-			if (replace) {
-				setting = _.mapObject(setting, function (str) {
-					_.each(replacers, function (rep) {
-						str = str.replace(rep[2], rep[1]);
-					});
-					return str;
-				});
-			}
-			_.extend(fillIn, _.mapObject(setting, str => str.search(/%(\S.*?)(?:_(max))?%/) !== -1));
-			return setting;
+		},
+		parseAbilities = function (args, fillIn, replace) {
+			return args.map(str => {
+					let split = str.split('#');
+					return [split.shift(), split.join('#')];
+				})
+				.reduce((m, c) => {
+					if (c[0] && c[1] !== undefined) {
+						let str = c[1];
+						fillIn[c[0]] = str.search(/%%(\S.*?)(?:_(max))?%%/) !== -1;
+						if (replace) {
+							replacers.forEach(rep => {
+								str = str.replace(rep[1], rep[0]);
+							});
+						}
+						m[c[0]] = str;
+					}
+					else if (c[0]) {
+						m[c[0]] = false;
+					}
+					return m;
+				}, {});
 		},
 		// These functions are used to get a list of character ids from the input,
 		// and check for permissions.
 		checkPermissions = function (list, errors, playerid, isGM) {
-			let control, character;
-			_.each(list, function (id, k) {
-				character = getObj('character', id);
+			return list.filter(id => {
+				let character = getObj('character', id);
 				if (character) {
-					control = character.get('controlledby')
-						.split(/,/);
-					if (!(isGM || _.contains(control, 'all') || _.contains(control, playerid))) {
-						list[k] = null;
+					let control = character.get('controlledby').split(/,/);
+					if (!(isGM || control.includes('all') || control.includes(playerid))) {
 						errors.push(`Permission error for character ${character.get('name')}.`);
+						return false;
 					}
+					else return true;
 				}
 				else {
 					errors.push(`Invalid character id ${id}.`);
-					list[k] = null;
+					return false;
 				}
 			});
-			return _.compact(list);
 		},
 		getIDsFromTokens = function (selected) {
-			return _.chain(selected)
-				.map(obj => getObj('graphic', obj._id))
-				.compact()
+			return selected.map(obj => getObj('graphic', obj._id))
+				.filter(x => !!x)
 				.map(token => token.get('represents'))
-				.compact()
-				.filter(id => getObj('character', id))
-				.value();
+				.filter(id => getObj('character', id || ''));
 		},
 		getIDsFromNames = function (charNames, errors) {
-			return _.chain(charNames.split(/\s*,\s*/))
-				.map(function (name) {
+			return charNames.split(/\s*,\s*/)
+				.map(name => {
 					let character = findObjs({
 						_type: 'character',
 						name: name
@@ -298,16 +291,15 @@ var setAbility = setAbility || (function () {
 						return character.id;
 					}
 					else {
-						errors.push('No character named ' + name + ' found.');
+						errors.push(`No character named ${name} found.`);
 						return null;
 					}
 				})
-				.compact()
-				.value();
+				.filter(x => !!x);
 		},
 		sendFeedback = function (whisper, feedback) {
 			let output = whisper + '<div style="border:1px solid black;background-color:' +
-				'#FFFFFF;padding:3px;"><h3>Setting attributes</h3><p>' +
+				'#FFFFFF;padding:3px;"><h3>Setting abilities</h3><p>' +
 				(feedback.join('<br>') || 'Nothing to do.') + '</p></div>';
 			sendChatMessage(output);
 		},
@@ -315,7 +307,7 @@ var setAbility = setAbility || (function () {
 			let output = whisper + '<div style="border:1px solid black;background-color:' +
 				'#FFFFFF;padding:3px;"><h3>Deleting abilities</h3><p>';
 			output += _.chain(feedback)
-				.omit(arr => _.isEmpty(arr))
+				.omit(arr => arr.length === 0)
 				.map(function (arr, charid) {
 					return `Deleting abilities(s) ${arr.join(', ')} for character` +
 						` ${getCharNameById(charid)}.`;
@@ -339,15 +331,15 @@ var setAbility = setAbility || (function () {
 				errors = [];
 			const hasValue = ['charid', 'name'],
 				optsArray = ['all', 'allgm', 'charid', 'name', 'allplayers', 'sel',
-					'replace', 'nocreate', 'evaluate', 'silent', 'mute', 'token'
+					'replace', 'nocreate', 'evaluate', 'silent', 'mute', 'token', 'deleteall'
 				],
 				opts = parseOpts(processInlinerolls(msg), hasValue),
+				deleteMode = (mode[1] === 'del'),
 				setting = parseAbilities(_.chain(opts)
 					.omit(optsArray)
 					.keys()
 					.value(),
-					opts.replace, fillIn),
-				deleteMode = (mode[1] === 'del'),
+					fillIn, opts.replace),
 				isGM = msg.playerid === 'API' || playerIsGM(msg.playerid);
 			opts.silent = opts.silent || opts.mute;
 			opts.token = opts.token || false;
@@ -357,25 +349,21 @@ var setAbility = setAbility || (function () {
 			}
 			// Get list of character IDs
 			if (opts.all && isGM) {
-				charIDList = _.map(findObjs({
+				charIDList = findObjs({
 					_type: 'character'
-				}), c => c.id);
+				}).map(c => c.id);
 			}
 			else if (opts.allgm && isGM) {
-				charIDList = _.chain(findObjs({
+				charIDList = findObjs({
 						_type: 'character'
-					}))
-					.filter(c => c.get('controlledby') === '')
-					.map(c => c.id)
-					.value();
+					}).filter(c => c.get('controlledby') === '')
+					.map(c => c.id);
 			}
 			else if (opts.allplayers && isGM) {
-				charIDList = _.chain(findObjs({
+				charIDList = findObjs({
 						_type: 'character'
-					}))
-					.filter(c => c.get('controlledby') !== '')
-					.map(c => c.id)
-					.value();
+					}).filter(c => c.get('controlledby') !== '')
+					.map(c => c.id);
 			}
 			else {
 				(opts.charid) ? charIDList.push(...opts.charid.split(/\s*,\s*/)): null;
@@ -387,16 +375,16 @@ var setAbility = setAbility || (function () {
 				errors.push('No target characters. You need to supply one of --all, --allgm, --sel,' +
 					' --allplayers, --charid, or --name.');
 			}
-			if (_.isEmpty(setting)) {
+			if (_.isEmpty(setting) && !(deleteMode && opts.deleteall)) {
 				errors.push('No abilities supplied.');
 			}
 			// Get abilities
-			let allAbilities = getAbilities(charIDList, _.keys(setting), errors, !opts.nocreate && !deleteMode, deleteMode);
+			let allAbilities = getAbilities(charIDList, Object.keys(setting), errors, !opts.nocreate && !deleteMode, deleteMode, deleteMode && opts.deleteall);
 			if (!opts.mute) handleErrors(whisper, errors);
 			// Set or delete abilities
-			if (!_.isEmpty(charIDList) && !_.isEmpty(setting)) {
+			if (!(charIDList.length === 0) && (!_.isEmpty(setting) || (deleteMode && opts.deleteall))) {
 				if (deleteMode) {
-					deleteAbilities(whisper, allAbilities, opts.silent);
+					deleteAbilities(whisper, allAbilities, opts.silent, opts.deleteall);
 				}
 				else {
 					delayedSetAbilities(whisper, charIDList, setting, errors, allAbilities,
