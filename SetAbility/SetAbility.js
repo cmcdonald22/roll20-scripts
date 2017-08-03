@@ -9,7 +9,7 @@ var setAbility = setAbility || (function () {
 			['?', /\\q/g],
 			['@', /\\at/g],
 			['%', /\\p/g],
-			['&', /&/g],
+			['&', /\\amp/g],
 			['#', /\\r/g]
 		],
 		checkInstall = function () {
