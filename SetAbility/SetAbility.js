@@ -10,7 +10,7 @@ var setAbility = setAbility || (function () {
 			['@', /\\at/g],
 			['%', /\\p/g],
 			['&', /\\amp/g],
-			['#', /\\r/g]
+			['#', /\\h/g]
 		],
 		checkInstall = function () {
 			log(`-=> SetAbility v${version} <=-`);
