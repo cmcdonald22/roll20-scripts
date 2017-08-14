@@ -178,15 +178,6 @@ var bladesHelper = bladesHelper || (function () {
 			"use strict";
 			return generateUUID().replace(/_/g, "Z");
 		},
-		getNumberFromSize = function (size) {
-			const conversionTable = {
-				'4': '1',
-				'6': '2',
-				'8': '3',
-				'12': '4'
-			};
-			return conversionTable[size] || '1';
-		},
 		checkInstall = function () {
 			state.BladesHelper = (state.BladesHelper || {
 				data: []
@@ -356,7 +347,7 @@ var bladesHelper = bladesHelper || (function () {
 						if (charID) {
 							const rowID = generateRowID(),
 								sectionName = (getAttrByName(charID, 'sheet_type') === 'crew') ? 'crewclock' : 'clock',
-								attrName = `repeating_${sectionName}_${rowID}_clock${getNumberFromSize(size)}`;
+								attrName = `repeating_${sectionName}_${rowID}_progress`;
 							createObj('attribute', {
 								characterid: charID,
 								name: `repeating_${sectionName}_${rowID}_size`,
@@ -461,15 +452,15 @@ var bladesHelper = bladesHelper || (function () {
 					state.BladesHelper.data.push({
 						character: charID,
 						token: token.id,
-						attribute: `${match[1]}_clock${getNumberFromSize(size)}`.toLowerCase()
+						attribute: `${match[1]}_progress`.toLowerCase()
 					});
 					if (!findObjs({
 							type: 'attribute',
 							characterid: charID,
-							name: `${match[1]}_clock${getNumberFromSize(size)}`
+							name: `${match[1]}_progress`
 						})[0]) createObj('attribute', {
 						characterid: charID,
-						name: `${match[1]}_clock${getNumberFromSize(size)}`
+						name: `${match[1]}_progress`
 					});
 					sendChatNoArchive(`${whisper} New ${size}-clock added for ${getObj('character', charID).get('name')}.`);
 				}
