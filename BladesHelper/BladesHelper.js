@@ -462,7 +462,8 @@ var bladesHelper = bladesHelper || (function () {
 		registerEventHandlers = function () {
 			on('chat:message', handleInput);
 			on('change:graphic:currentSide', handleSideChange);
-			on('change:attribute add:attribute', handleAttrChange);
+			on('change:attribute', handleAttrChange);
+			on('add:attribute', handleAttrChange);
 			on('destroy:graphic', handleTokenRemove);
 			on('destroy:character', handleCharRemove);
 			on('destroy:attribute', handleAttrRemove);
