@@ -196,61 +196,45 @@ var bladesHelper = bladesHelper || (function () {
 				return '/w GM ';
 			}
 		},
+		getGenericTokenData = name => ({
+			currentSide: 0,
+			showplayers_name: true,
+			showname: true,
+			name: name,
+			_pageid: Campaign().get('playerpageid'),
+			isdrawing: true,
+			layer: 'objects',
+			left: position[0],
+			top: position[1]
+		}),
 		getClockTokenData = function (size, label, charID, playerid) {
-			const data = {
+			const data = Object.assign(getGenericTokenData(label), {
 				imgsrc: clockData[size][0],
 				sides: clockData[size].map(encodeURIComponent).join('|'),
-				currentSide: 0,
-				showplayers_name: true,
-				showname: true,
-				name: label,
-				isdrawing: true,
-				layer: 'objects',
-				_pageid: Campaign().get('playerpageid'),
 				width: 52,
-				height: 52,
-				left: position[0],
-				top: position[1]
-			};
+				height: 52
+			});
 			if (charID) data.represents = charID;
 			else data.controlledby = playerid;
 			return data;
 		},
 		getStressTokenData = function (charID) {
-			return {
+			return Object.assign(getGenericTokenData(getObj('character', charID).get('name')), {
 				imgsrc: barData.stress[0],
 				sides: barData.stress.map(encodeURIComponent).join('|'),
-				currentSide: 0,
-				showplayers_name: true,
-				showname: true,
 				represents: charID,
-				name: getObj('character', charID).get('name'),
-				isdrawing: true,
-				layer: 'objects',
-				_pageid: Campaign().get('playerpageid'),
 				width: 288,
-				height: 40,
-				left: position[0],
-				top: position[1]
-			};
+				height: 40
+			});
 		},
 		getTraumaTokenData = function (charID) {
-			return {
+			return Object.assign(getGenericTokenData(getObj('character', charID).get('name')), {
 				imgsrc: barData.trauma[0],
 				sides: barData.trauma.map(encodeURIComponent).join('|'),
-				currentSide: 0,
-				showplayers_name: true,
-				showname: true,
 				represents: charID,
-				name: getObj('character', charID).get('name'),
-				isdrawing: true,
-				layer: 'objects',
-				_pageid: Campaign().get('playerpageid'),
 				width: 100,
-				height: 40,
-				left: position[0],
-				top: position[1]
-			};
+				height: 40
+			});
 		},
 		handleInput = function (msg) {
 			if (msg.type === 'api' && msg.content.match(/^!blades-helper/)) {
@@ -478,7 +462,7 @@ var bladesHelper = bladesHelper || (function () {
 		registerEventHandlers = function () {
 			on('chat:message', handleInput);
 			on('change:graphic:currentSide', handleSideChange);
-			on('change:attribute', handleAttrChange);
+			on('change:attribute add:attribute', handleAttrChange);
 			on('destroy:graphic', handleTokenRemove);
 			on('destroy:character', handleCharRemove);
 			on('destroy:attribute', handleAttrRemove);
