@@ -194,6 +194,15 @@ var bladesHelper = bladesHelper || (function () {
 				return '/w GM ';
 			}
 		},
+		getClockAttributeFromSize = size => {
+			const data = {
+				'4': 'clock1',
+				'6': 'clock2',
+				'8': 'clock3',
+				'12': 'clock4'
+			};
+			return data[size];
+		},
 		getGenericTokenData = name => ({
 			currentSide: 0,
 			showplayers_name: true,
@@ -333,7 +342,7 @@ var bladesHelper = bladesHelper || (function () {
 						if (charID) {
 							const rowID = generateRowID(),
 								sectionName = (getAttrByName(charID, 'sheet_type') === 'crew') ? 'crewclock' : 'clock',
-								attrName = `repeating_${sectionName}_${rowID}_progress`;
+								attrName = `repeating_${sectionName}_${rowID}_${getClockAttributeFromSize(size)}`;
 							createObj('attribute', {
 								characterid: charID,
 								name: `repeating_${sectionName}_${rowID}_size`,
@@ -438,15 +447,15 @@ var bladesHelper = bladesHelper || (function () {
 					state.BladesHelper.data.push({
 						character: charID,
 						token: token.id,
-						attribute: `${match[1]}_progress`.toLowerCase()
+						attribute: `${match[1]}_${getClockAttributeFromSize(size)}`.toLowerCase()
 					});
 					if (!findObjs({
 							type: 'attribute',
 							characterid: charID,
-							name: `${match[1]}_progress`
+							name: `${match[1]}_${getClockAttributeFromSize(size)}`
 						})[0]) createObj('attribute', {
 						characterid: charID,
-						name: `${match[1]}_progress`
+						name: `${match[1]}_${getClockAttributeFromSize(size)}`
 					});
 					sendChatNoArchive(`${whisper} New ${size}-clock added for ${getObj('character', charID).get('name')}.`);
 				}
