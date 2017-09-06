@@ -1,21 +1,28 @@
-// BladesHelper v1.1
+// BladesHelper v1.2
 //
 // Credit for the stress and trauma tokens goes to Sven Düsterwald
 //
 // CONFIGURATION
 //
-// 1) The position variable stores the x-y coordinates of the point where the clocks will appear.
-//    Change it to put them somewhere else.
-//
-// 2) You can change the URLs in the clockData and barData variables to use different graphics.
+// 1) You can change the URLs in the clockData and barData variables to use different graphics.
 //    Due to Roll20 restrictions, they need to be images uploaded to your Roll20 library,
 //    and it needs to be the "thumb" size variant.
 //
+// 2) You can configure the script via the following commands:
+//  a) !blades-helper config autoclock [on|off] will turn automatic creation of clocks on
+//     the tabletop on or off, respectively (if one is created in a character sheet)
+//  b) !blades-helper config position [x] [y] will set the position of newly created tokens
+//     to the specified [x] and [y] coordinates. Defaults to 200 and 300.
+//
 // USAGE
+//
+// * Any tokens created by this command will be created on the page you are currently on
+//   (if a GM), or on the page the player badge is currently on (otherwise).
 //
 // * Adding a clock to a character sheet and naming it will automatically create a linked
 //   clock on the tabletop. Be careful to set the size first, and then the name, since the
-//   size will be locked in once the name has been entered.
+//   size will be locked in once the name has been entered. You can turn this behaviour
+//   off via the config command above.
 //
 // * !blades-helper help
 //   Show help on available commands.
@@ -62,14 +69,20 @@
 // * !blades-helper remove
 //   Removes any link for the currently selected tokens.
 //
-// * !blades-helper clear
-//   Clears all links between tokens and attributes.
-
+// * !blades-helper reset
+//   Clears all links between tokens and attributes. Resets all configuration options to their defaults.
 var bladesHelper = bladesHelper || (function () {
 	'use strict';
-	const position = [300, 200],
-		sendChatNoArchive = function (content) {
-			sendChat('API', content, null, {
+	const sendChatMessage = function (playerid, content) {
+			const getWhisperPrefix = id => {
+					const player = getObj('player', id);
+					if (player && player.get('_displayname')) {
+						return '/w "' + player.get('_displayname') + '" ';
+					}
+					else return '/w GM ';
+				},
+				whisper = playerid ? getWhisperPrefix(playerid) : '';
+			sendChat('API', whisper + content, null, {
 				noarchive: true
 			});
 		},
@@ -138,11 +151,49 @@ var bladesHelper = bladesHelper || (function () {
 				"https://s3.amazonaws.com/files.d20.io/images/35195607/8dwUW46sa4_1aIClmvypMw/thumb.png?1498658810"
 			]
 		},
-		showHelp = function (whisper) {
-			let output = whisper + '<div style="border:1px solid #888;border-radius:5px;' +
-				'background-color:#FFFFFF;padding:1px 3px;margin-left:-42px;">' +
-				'BladesHelper v1.1<br><br>Credit for the stress and trauma tokens goes to Sven Düsterwald.<br><br>**CONFIGURATION OPTIONS**<br><br>1) The position variable stores the x-y coordinates of the point where the clocks will appear. Change it to put them somewhere else.<br><br>2) You can change the URLs in the clockData and barData variables to use different graphics. Due to Roll20 restrictions, they need to be images uploaded to your Roll20 library, and it needs to be the "thumb" size variant.<br><br>**USAGE**<br><br> Adding a clock to a character sheet and naming it will automatically create a linked clock on the tabletop. Be careful to set the size first, and then the name, since the size will be locked in once the name has been entered.<br><br> **!blades-helper add-clock &lt;size&gt; none &lt;name&gt;**<br>Creates a new clock of size &lt;size&gt; with name &lt;name&gt; on the tabletop. This clock is not linked to any clock on a character sheet. Example:<br> !blades-helper add-clock 8 none Drive off the Red Sashes gang<br><br>**!blades-helper add-clock &lt;size&gt; char &lt;charid&gt; &lt;name&gt;**<br>Creates a new clock of size &lt;size&gt; on the tabletop, linked to the character with id &lt;charid&gt;, with name &lt;name&gt;. If the sheet is a character sheet, it will be put on the character page, if it is a crew sheet, it will be put on the crew page. "Linked" means that changes in either of the clocks will effect changes in the other one. Example:<br> !blades-helper add-clock 6 char @{Silver|character_id} Research demon binding<br><br>**!blades-helper add-stress-bar &lt;charid&gt; &lt;attrname&gt;**<br>Creates a new stress bar on the tabletop, linked to the attribute &lt;attrname&gt; of the character with id &lt;charid&gt;. Example:<br> !blades-helper add-stress-bar @{Canter Haig|character_id} stress<br>!blades-helper add-stress-bar @{Bloodletters|character_id} heat<br><br>**!blades-helper add-trauma-bar &lt;charid&gt; &lt;attrname&gt;**<br>Creates a new trauma bar on the tabletop, linked to the attribute &lt;attrname&gt; of the character with id &lt;charid&gt;. Example:<br> !blades-helper add-trauma-bar @{Canter Haig|character_id} trauma<br> !blades-helper add-stress-bar @{Bloodletters|character_id} wanted<br><br>**!blades-helper add-by-token &lt;attrname&gt;**<br>Starts to link the selected rollable table side with the attribute &lt;attrname&gt; of the character that the rollable table token represents. Example:<br> !blades-helper add-by-token stress<br> !blades-helper add-by-token trauma<br><br>**!blades-helper add-by-id &lt;charid&gt; &lt;attrname&gt;**<br>Starts to link the selected rollable table side with the attribute &lt;attrname&gt; of the character with id &lt;charid&gt;. Example:<br> !blades-helper add-by-id @{Silver|character_id} stress<br> !blades-helper add-by-id @{Silver|character_id} trauma<br><br>**!blades-helper show**<br>Shows all currently active links between tokens and character atributes.<br><br>**!blades-helper remove**<br>Removes any link for the currently selected tokens.<br><br>**!blades-helper clear**<br>Clears all links between tokens and attributes.' + '</div>';
-			sendChatNoArchive(output);
+		defaultConfig = {
+			autoclock: true,
+			position: [200, 300]
+		},
+		showHelp = function (playerid) {
+			let output = '<div style="border:1px solid #888;border-radius:5px;background-color:#fff;padding:1px 3px;margin-left:-42px;">' +
+				'BladesHelper v1.1<br><br>' +
+				'Credit for the stress and trauma tokens goes to Sven Düsterwald.<br><br>' +
+				'**CONFIGURATION OPTIONS**<br><br>' +
+				'1) You can change the URLs in the clockData and barData variables to use different graphics. Due to Roll20 restrictions, they need to be images uploaded to your Roll20 library, and it needs to be the "thumb" size variant.<br><br>' +
+				'2) You can configure the script via the following commands:<br>' +
+				'a) **!blades-helper config autoclock [on|off]** will turn automatic creation of clocks on the tabletop on or off, respectively (if one is created in a character sheet)<br>' +
+				'b) **!blades-helper config position [x] [y]** will set the position of newly created tokens to the specified [x] and [y] coordinates. Defaults to 200 and 300.<br><br>' +
+				'**USAGE**<br><br>' +
+				'Any tokens created by this command will be created on the page you are currently on (if a GM), or on the page the player badge is currently on (otherwise).<br><br>' +
+				'Adding a clock to a character sheet and naming it will automatically create a linked clock on the tabletop. Be careful to set the size first, and then the name, since the size will be locked in once the name has been entered. You can turn this behaviour off via the config command above.<br><br>' +
+				'**!blades-helper add-clock &lt;size&gt; none &lt;name&gt;**<br>' +
+				'Creates a new clock of size &lt;size&gt; with name &lt;name&gt; on the tabletop. This clock is not linked to any clock on a character sheet. Example:<br>' +
+				'!blades-helper add-clock 8 none Drive off the Red Sashes gang<br><br>' +
+				'**!blades-helper add-clock &lt;size&gt; char &lt;charid&gt; &lt;name&gt;**<br>Creates a new clock of size &lt;size&gt; on the tabletop, linked to the character with id &lt;charid&gt;, with name &lt;name&gt;. If the sheet is a character sheet, it will be put on the character page, if it is a crew sheet, it will be put on the crew page. "Linked" means that changes in either of the clocks will effect changes in the other one. Example:<br>' +
+				'!blades-helper add-clock 6 char &#64;{Silver|character_id} Research demon binding<br><br>' +
+				'**!blades-helper add-stress-bar &lt;charid&gt; &lt;attrname&gt;**<br>Creates a new stress bar on the tabletop, linked to the attribute &lt;attrname&gt; of the character with id &lt;charid&gt;. Example:<br>' +
+				'!blades-helper add-stress-bar &#64;{Canter Haig|character_id} stress<br>' +
+				'!blades-helper add-stress-bar &#64;{Bloodletters|character_id} heat<br><br>' +
+				'**!blades-helper add-trauma-bar &lt;charid&gt; &lt;attrname&gt;**<br>' +
+				'Creates a new trauma bar on the tabletop, linked to the attribute &lt;attrname&gt; of the character with id &lt;charid&gt;. Example:<br>' +
+				'!blades-helper add-trauma-bar &#64;{Canter Haig|character_id} trauma<br>' +
+				'!blades-helper add-stress-bar &#64;{Bloodletters|character_id} wanted<br><br>' +
+				'**!blades-helper add-by-token &lt;attrname&gt;**<br>' +
+				'Starts to link the selected rollable table side with the attribute &lt;attrname&gt; of the character that the rollable table token represents. Example:<br>' +
+				'!blades-helper add-by-token stress<br>' +
+				'!blades-helper add-by-token trauma<br><br>**!blades-helper add-by-id &lt;charid&gt; &lt;attrname&gt;**<br>' +
+				'Starts to link the selected rollable table side with the attribute &lt;attrname&gt; of the character with id &lt;charid&gt;. Example:<br>' +
+				'!blades-helper add-by-id &#64;{Silver|character_id} stress<br>' +
+				'!blades-helper add-by-id &#64;{Silver|character_id} trauma<br><br>' +
+				'**!blades-helper show**<br>' +
+				'Shows all currently active links between tokens and character atributes.<br><br>' +
+				'**!blades-helper remove**<br>' +
+				'Removes any link for the currently selected tokens.<br><br>' +
+				'**!blades-helper reset**<br>' +
+				'Clears all links between tokens and attributes.' +
+				'</div>';
+			sendChatMessage(playerid, output);
 		},
 		generateUUID = function () {
 			"use strict";
@@ -180,36 +231,45 @@ var bladesHelper = bladesHelper || (function () {
 		},
 		checkInstall = function () {
 			state.BladesHelper = (state.BladesHelper || {
-				data: []
+				data: [],
+				config: Object.assign({}, defaultConfig)
 			});
 			state.BladesHelper.data = state.BladesHelper.data.filter(v => {
 				return (getObj('graphic', v.token) && getObj('character', v.character));
 			});
-			log('BladesHelper active.');
-		},
-		getWhisperPrefix = function (playerid) {
-			const player = getObj('player', playerid);
-			if (player && player.get('_displayname')) {
-				return '/w "' + player.get('_displayname') + '" ';
+			// Upgrade from pre-config versions
+			if (!('config' in state.BladesHelper)) {
+				state.BladesHelper.config = Object.assign({}, defaultConfig);
 			}
-			else {
-				return '/w GM ';
+			log('BladesHelper v1.2 active.');
+		},
+		checkPermission = function (playerid, character) {
+			const control = character && character.get('controlledby').split(/,/);
+			if (!playerIsGM(playerid) && control && !control.includes('all') && !control.includes(playerid)) {
+				sendChatMessage(playerid, 'Permission denied.');
+				return false;
+			} else {
+				return true;
 			}
 		},
-		getGenericTokenData = name => ({
-			currentSide: 0,
-			showplayers_name: true,
-			showname: true,
-			name: name,
-			_pageid: Campaign().get('playerpageid'),
-			isdrawing: true,
-			layer: 'objects',
-			left: position[0],
-			top: position[1]
-		}),
+		getGenericTokenData = function (playerid) {
+			const data = {
+				currentSide: 0,
+				showplayers_name: true,
+				showname: true,
+				isdrawing: true,
+				layer: 'objects',
+				left: state.BladesHelper.config.position[0],
+				top: state.BladesHelper.config.position[1]
+			};
+			data._pageid = playerIsGM(playerid) ? getObj('player', playerid).get('_lastpage') :
+				Campaign().get('playerpageid');
+			return data;
+		},
 		getClockTokenData = function (size, label, charID, playerid) {
-			const data = Object.assign(getGenericTokenData(label), {
+			const data = Object.assign(getGenericTokenData(playerid), {
 				imgsrc: clockData[size][0],
+				name: label,
 				sides: clockData[size].map(encodeURIComponent).join('|'),
 				width: 52,
 				height: 52
@@ -218,18 +278,20 @@ var bladesHelper = bladesHelper || (function () {
 			else data.controlledby = playerid;
 			return data;
 		},
-		getStressTokenData = function (charID) {
-			return Object.assign(getGenericTokenData(getObj('character', charID).get('name')), {
+		getStressTokenData = function (charID, playerid) {
+			return Object.assign(getGenericTokenData(playerid), {
 				imgsrc: barData.stress[0],
+				name: getObj('character', charID).get('name'),
 				sides: barData.stress.map(encodeURIComponent).join('|'),
 				represents: charID,
 				width: 288,
 				height: 40
 			});
 		},
-		getTraumaTokenData = function (charID) {
-			return Object.assign(getGenericTokenData(getObj('character', charID).get('name')), {
+		getTraumaTokenData = function (charID, playerid) {
+			return Object.assign(getGenericTokenData(playerid), {
 				imgsrc: barData.trauma[0],
+				name: getObj('character', charID).get('name'),
 				sides: barData.trauma.map(encodeURIComponent).join('|'),
 				represents: charID,
 				width: 100,
@@ -238,80 +300,96 @@ var bladesHelper = bladesHelper || (function () {
 		},
 		handleInput = function (msg) {
 			if (msg.type === 'api' && msg.content.match(/^!blades-helper/)) {
-				const args = msg.content.split(' ').slice(1) || [''],
-					whisper = getWhisperPrefix(msg.playerid);
-				let character, control;
+				const args = msg.content.split(' ').slice(1) || [''];
+				let errorsExist = false;
 				switch (args.shift()) {
+				case 'config':
+					if (args[0] === 'autoclock') {
+						if (args[1] === 'on') {
+							state.BladesHelper.config.autoclock = true;
+							sendChatMessage(msg.playerid, 'Automatic clock creation turned <strong>on</strong>.');
+						}
+						else if (args[1] === 'off') {
+							state.BladesHelper.config.autoclock = false;
+							sendChatMessage(msg.playerid, 'Automatic clock creation turned <strong>off</strong>.');
+						}
+						else errorsExist = true;
+					}
+					else if (args[0] === 'position') {
+						const x = parseInt(args[1]),
+							y = parseInt(args[2]);
+						if (isFinite(x) && isFinite(y)) {
+							state.BladesHelper.config.position = [x, y];
+							sendChatMessage(msg.playerid, `New default position for tokens is [${x},${y}].`);
+						}
+						else errorsExist = true;
+					}
+					else errorsExist = true;
+					break;
 				case 'add-by-id':
 					if (args[0] && args[1] && msg.selected) {
 						msg.selected.forEach(o => {
 							const token = getObj('graphic', o._id),
-								character = getObj('character', args[0]),
-								control = character && character.get('controlledby').split(/,/);
-							if (!playerIsGM(msg.playerid) && control && !control.includes('all') && !control.includes(msg.playerid)) {
-								sendChatNoArchive(`${whisper} Permission denied.`);
-								return;
-							}
-							if (token && token.get('sides') && character) {
+								character = getObj('character', args[0]);
+							if (checkPermission(msg.playerid, character) && token && token.get('sides') && character) {
 								state.BladesHelper.data.push({
 									character: args[0],
 									token: token.id,
 									attribute: args[1].toLowerCase()
 								});
-								sendChatNoArchive(`${whisper} Synchronization added for attribute ${args[1]} and character ${character.get('name')}.`);
+								sendChatMessage(msg.playerid, `Synchronization added for attribute ${args[1]} and character ${character.get('name')}.`);
 							}
+							else errorsExist = true;
 						});
 					}
+					else errorsExist = true;
 					break;
 				case 'add-by-token':
 					if (args[0]) {
 						msg.selected.forEach(o => {
 							const token = getObj('graphic', o._id);
-							if (!token || !token.get('sides')) return;
-							const character = getObj('character', token.get('represents'));
-							if (!character) return;
-							state.BladesHelper.data.push({
-								character: token.get('represents'),
-								token: token.id,
-								attribute: args[0].toLowerCase()
-							});
-							sendChatNoArchive(`${whisper} Synchronization added for attribute ${args[0]} and character ${character.get('name')}.`);
+							if (token && token.get('sides') && getObj('character', token.get('represents'))) {
+								state.BladesHelper.data.push({
+									character: token.get('represents'),
+									token: token.id,
+									attribute: args[0].toLowerCase()
+								});
+								sendChatMessage(msg.playerid, `Synchronization added for attribute ${args[0]} and character ${getObj('character', token.get('represents')).get('name')}.`);
+							}
+							else errorsExist = true;
 						});
 					}
+					else errorsExist = true;
 					break;
 				case 'add-stress-bar':
 					if (getObj('character', args[0]) && args[1]) {
-						character = getObj('character', args[0]);
-						control = character && character.get('controlledby').split(/,/);
-						if (!playerIsGM(msg.playerid) && control && !control.includes('all') && !control.includes(msg.playerid)) {
-							sendChatNoArchive(`${whisper} Permission denied.`);
-							return;
+						const character = getObj('character', args[0]);
+						if (checkPermission(msg.playerid, character)) {
+							const token = createObj('graphic', getStressTokenData(args[0]));
+							state.BladesHelper.data.push({
+								character: args[0],
+								token: token.id,
+								attribute: args[1].toLowerCase()
+							});
+							sendChatMessage(msg.playerid, `Stress bar added for attribute ${args[1]} and character ${character.get('name')}.`);
 						}
-						const token = createObj('graphic', getStressTokenData(args[0]));
-						state.BladesHelper.data.push({
-							character: args[0],
-							token: token.id,
-							attribute: args[1].toLowerCase()
-						});
-						sendChatNoArchive(`${whisper} Stress bar added for attribute ${args[1]} and character ${character.get('name')}.`);
 					}
+					else errorsExist = true;
 					break;
 				case 'add-trauma-bar':
 					if (getObj('character', args[0]) && args[1]) {
-						character = getObj('character', args[0]);
-						control = character && character.get('controlledby').split(/,/);
-						if (!playerIsGM(msg.playerid) && control && !control.includes('all') && !control.includes(msg.playerid)) {
-							sendChatNoArchive(`${whisper} Permission denied.`);
-							return;
+						const character = getObj('character', args[0]);
+						if (checkPermission(msg.playerid, character)) {
+							const token = createObj('graphic', getTraumaTokenData(args[0]));
+							state.BladesHelper.data.push({
+								character: args[0],
+								token: token.id,
+								attribute: args[1].toLowerCase()
+							});
+							sendChatMessage(msg.playerid, `Trauma bar added for attribute ${args[1]} and character ${character.get('name')}.`);
 						}
-						const token = createObj('graphic', getTraumaTokenData(args[0]));
-						state.BladesHelper.data.push({
-							character: args[0],
-							token: token.id,
-							attribute: args[1].toLowerCase()
-						});
-						sendChatNoArchive(`${whisper} Trauma bar added for attribute ${args[1]} and character ${character.get('name')}.`);
 					}
+					else errorsExist = true;
 					break;
 				case 'add-clock':
 					const size = args[0],
@@ -319,14 +397,7 @@ var bladesHelper = bladesHelper || (function () {
 						charID = (target === 'char') ? args[2] : null,
 						label = args.slice((target === 'char') ? 3 : 2).join(' ');
 					if (clockData[size] && (charID ? getObj('character', charID) : true)) {
-						if (charID) {
-							character = getObj('character', charID);
-							control = character && character.get('controlledby').split(/,/);
-							if (!playerIsGM(msg.playerid) && control && !control.includes('all') && !control.includes(msg.playerid)) {
-								sendChatNoArchive(`${whisper} Permission denied.`);
-								return;
-							}
-						}
+						if (charID && !checkPermission(msg.playerid, getObj('character', charID))) return;
 						const token = createObj('graphic', getClockTokenData(size, label, charID, msg.playerid));
 						if (charID) {
 							const rowID = generateRowID(),
@@ -352,12 +423,13 @@ var bladesHelper = bladesHelper || (function () {
 								token: token.id,
 								attribute: attrName.toLowerCase()
 							});
-							sendChatNoArchive(`${whisper} New ${size}-clock added for ${getObj('character', charID).get('name')}.`);
+							sendChatMessage(msg.playerid, `New ${size}-clock added for ${getObj('character', charID).get('name')}.`);
 						}
 						else {
-							sendChatNoArchive(`${whisper} New ${size}-clock added.`);
+							sendChatMessage(msg.playerid, `New ${size}-clock added.`);
 						}
 					}
+					else errorsExist = true;
 					break;
 				case 'remove':
 					if (!msg.selected) return;
@@ -365,34 +437,39 @@ var bladesHelper = bladesHelper || (function () {
 					state.BladesHelper.data = state.BladesHelper.data.filter(function (v) {
 						if (selectedIDs.includes(v.token)) {
 							const charName = getObj('character', v.character).get('name');
-							sendChatNoArchive(`${whisper} Synchronization removed for attribute ${v.attribute} and character ${charName}.`);
+							sendChatMessage(msg.playerid, `Synchronization removed for attribute ${v.attribute} and character ${charName}.`);
 							return false;
 						}
 						else return true;
 					})
 					break;
 				case 'show':
-					const output = whisper + '<div style="border:1px solid black;background-color:#FFFFFF;padding:3px">' +
+					const output = '<div style="border:1px solid black;background-color:#FFFFFF;padding:3px">' +
 						'<h4>Synchronisation data:</h4><br><table style="margin:3px;">' +
 						'<tr><td><b>Character</b></td><td><b>Attribute name</b></tr>' +
 						state.BladesHelper.data.map(v => `<tr><td>${getObj('character', v.character).get('name')}</td><td>${v.attribute}</td></tr>`).join('') +
+						'</table><h4>Configuration:</h4><br><table style="margin:3px;">' +
+						Object.entries(state.BladesHelper.config)
+							.map(([k,v]) => `<tr><td style="padding-right: 10px"><b>${k}</b>:</td><td>${v}</td></tr>`).join('') +
 						'</table></div>';
-					sendChatNoArchive(output);
+					sendChatMessage(msg.playerid, output);
 					break;
-				case 'help':
-				case '':
-					showHelp(whisper);
-					break;
-				case 'clear':
+				case 'reset':
 					if (!playerIsGM(msg.playerid)) {
-						sendChatNoArchive(`${whisper} Permission denied.`);
+						sendChatMessage(msg.playerid, 'Permission denied.');
 						return;
 					}
 					state.BladesHelper = {
-						data: []
+						data: [],
+						config: Object.assign({}, defaultConfig)
 					};
-					sendChatNoArchive(whisper + 'Synchronisation data cleared.');
+					sendChatMessage(msg.playerid, 'State cleared, everything reset to default.');
+					break;
+				case 'help':
+				default:
+					showHelp(msg.playerid);
 				}
+				if (errorsExist) sendChatMessage(msg.playerid, 'Something went wrong with your command.');
 			}
 		},
 		handleSideChange = function (token) {
@@ -428,8 +505,8 @@ var bladesHelper = bladesHelper || (function () {
 		handleAttrCreate = function (attribute) {
 			const match = attribute.get('name').match(/^(repeating_(?:clock|crewclock)_(?:[A-Za-z0-9-]+?))_name/),
 				charID = attribute.get('characterid'),
-				whisper = getWhisperPrefix(getObj('character', charID).get('controlledby'));
-			if (match) {
+				charName = getObj('character', charID).get('name');
+			if (state.BladesHelper.config.autoclock && match) {
 				const size = getAttrByName(charID, match[1] + '_size');
 				if (clockData[size]) {
 					const token = createObj('graphic', getClockTokenData(size, attribute.get('current'), charID, 0));
@@ -446,7 +523,7 @@ var bladesHelper = bladesHelper || (function () {
 						characterid: charID,
 						name: `${match[1]}_progress`
 					});
-					sendChatNoArchive(`${whisper} New ${size}-clock added for ${getObj('character', charID).get('name')}.`);
+					sendChatMessage(null, `/w ${charName.split(' ')[0]} New ${size}-clock added for ${charName}.`);
 				}
 			}
 		},
